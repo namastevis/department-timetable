@@ -1111,6 +1111,22 @@ th {
         padding: 0.4rem 0.55rem;
     }
 
+    /* A slot in the middle of a class that started earlier. Kept as a row so
+       the time axis is complete, but deliberately quiet — repeating the whole
+       card here is what made the old grid four times taller than it needed. */
+    .agenda-slot.is-continues .agenda-time {
+        color: #cbd5e0;
+        font-weight: 400;
+    }
+
+    .agenda-continues {
+        display: block;
+        font-size: 0.7rem;
+        color: #cbd5e0;
+        font-style: italic;
+        padding: 0.2rem 0.1rem;
+    }
+
     .agenda-empty {
         font-size: 0.82rem;
         color: #a0aec0;

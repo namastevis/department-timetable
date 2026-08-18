@@ -16,7 +16,7 @@
 //     DESG319) is recorded as visiting.
 //   - facultyStatus is one of "full-time" | "adjunct" | "visiting". The old
 //     sheet's "Regular" is now "full-time"; Prof. Amit Inamdar (DESG218 Sec A
-//     and B) is "adjunct".
+//     and B) is "adjunct"; Prof. Nikhil Welankar (DESG481) is "visiting".
 //   - "Prof. Sameer Dubley" on MUSC101 is normalised to "Prof. Sameer Dublay"
 //     (same person as on MUSC206 / MUSC303).
 //   - Prof. Saraang Gangoo is now spelt "Prof. Sarang Ganoo" per the new sheet.
@@ -1186,7 +1186,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Capstone Project 1",
     "credits": 2,
     "faculty": "Prof. Nikhil Welankar",
-    "facultyStatus": "full-time",
+    "facultyStatus": "visiting",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
     "venue": "ARB103",
