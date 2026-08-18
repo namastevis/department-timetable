@@ -21,10 +21,10 @@
     <div class="toolbar">
       <!-- One control, two shapes: a labelled Hide/Show Filters button on the
            desktop rail, a hamburger on phones where the rail becomes a drawer. -->
-      <button id="toggleFiltersBtn" class="filters-toggle" type="button" aria-expanded="true" aria-controls="filterRail">
+      <button id="toggleFiltersBtn" class="filters-toggle" type="button" aria-expanded="false" aria-controls="filterRail">
         <span class="filters-burger" aria-hidden="true">&#9776;</span>
-        <span class="filters-toggle-icon" aria-hidden="true">&#8676;</span>
-        <span id="toggleFiltersLabel">Hide Filters</span>
+        <span class="filters-toggle-icon" aria-hidden="true">&#8677;</span>
+        <span id="toggleFiltersLabel">Show Filters</span>
         <span id="filterCountBadge" class="filters-count" hidden></span>
       </button>
 
@@ -58,10 +58,10 @@
       </select>
     </div>
 
-    <div class="workspace" id="workspace">
+    <div class="workspace rail-hidden" id="workspace">
       <!-- Titan-style rail: a category column on the left, the selected
            category's options beside it. -->
-      <aside class="filter-rail" id="filterRail">
+      <aside class="filter-rail" id="filterRail" aria-hidden="true">
         <div class="rail-head">
           <span class="rail-title">Filters</span>
           <button type="button" id="resetFiltersBtn" class="link-btn">Reset all</button>

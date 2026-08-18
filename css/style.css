@@ -21,14 +21,19 @@ body {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+/* Both lines scale with the viewport and never wrap. The subtitle is the
+   long one — "Department Timetable, AY 2026-27 (Term 1 & Semesters 3, 5, 7)"
+   is 62 characters, so at 320px it needs roughly 2.55vw to fit on one line. */
 .top-bar h1 {
-    font-size: 1.5rem;
+    font-size: clamp(0.95rem, 4vw, 1.5rem);
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .top-bar p {
-    font-size: 0.85rem;
+    font-size: clamp(0.5rem, 2.5vw, 0.85rem);
     color: #a0aec0;
+    white-space: nowrap;
 }
 
 /* Raised from 1400px. At 1400 the five day columns were 232px wide even on a
@@ -90,6 +95,13 @@ body {
 .filters-toggle-icon {
     font-size: 0.95rem;
     color: #718096;
+}
+
+/* The grid card has 1.25rem of its own padding, so the table's right edge sits
+   that far inside the card. Matching it here lines the button up with the end
+   of the Friday header instead of overhanging it. */
+#jumpToTodayBtn {
+    margin-right: 1.25rem;
 }
 
 /* Hamburger and the filter count are phone-only; the arrow + label are the
@@ -911,18 +923,49 @@ th {
     #prevWeekBtn::after { content: "\2039"; font-size: 1.15rem; line-height: 1; }
     #nextWeekBtn::after { content: "\203A"; font-size: 1.15rem; line-height: 1; }
 
-    /* Icon-only; the wording lives in title/aria-label (set in app.js). */
+    /* Short words beat an icon here: a circular arrow gave no clue that it
+       jumps to the current week. Full wording stays in title/aria-label. */
     #jumpToTodayBtn {
         font-size: 0;
-        padding: 0.4rem 0.6rem;
+        padding: 0.42rem 0.55rem;
+        margin-right: 0;
         flex: none;
+        align-self: center;
     }
 
-    #jumpToTodayBtn::after { content: "\21BB"; font-size: 1.05rem; line-height: 1; }
+    #jumpToTodayBtn::after {
+        content: attr(data-short);
+        font-size: 0.68rem;
+        font-weight: 600;
+        line-height: 1;
+        white-space: nowrap;
+    }
 
+    /* Fixed square rather than stretching to the toolbar's full height. */
     .filters-toggle {
-        padding: 0.42rem 0.6rem;
         flex: none;
+        align-self: center;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
+    .filters-burger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    /* With a count badge the button needs a little more room. */
+    .filters-toggle:has(.filters-count:not([hidden])) {
+        width: auto;
+        padding: 0 0.5rem;
     }
 
     .grid-card {
@@ -941,6 +984,8 @@ th {
         display: none;
     }
 
+    /* Pins under the sticky toolbar, so the week and the day you are looking
+       at stay on screen however far down the day you scroll. */
     .day-tabs {
         display: flex;
         background: #fff;
@@ -948,6 +993,10 @@ th {
         border-radius: 8px;
         overflow: hidden;
         margin-bottom: 0.85rem;
+        position: sticky;
+        top: var(--toolbar-h, 56px);
+        z-index: 35;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     }
 
     .day-tab {

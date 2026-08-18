@@ -565,9 +565,11 @@ function updateJumpButtonLabel() {
     const btn = document.getElementById("jumpToTodayBtn");
     const label = getJumpTarget().label;
     btn.textContent = label;
-    // On a phone the button is icon-only, so the words have to live somewhere.
     btn.title = label;
     btn.setAttribute("aria-label", label);
+    // Phones show a shortened wording rather than an icon — "↻" gave no clue
+    // what it would do. CSS renders this via ::after at phone widths.
+    btn.dataset.short = label.includes("Current") ? "This week" : "Term start";
 }
 
 function setupEventListeners() {
