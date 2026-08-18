@@ -454,33 +454,6 @@ body {
     color: #2b6cb0;
 }
 
-/* ============================================================
-   Common-free-slot highlighting
-   ============================================================ */
-
-/* Deliberately neutral slate — NOT the green of semester cards or the blue of
-   term cards. Those two colours mean "kind of course"; this is a note about
-   the view, and borrowing either one would imply a relationship that isn't
-   there. Nothing in the grid is tinted; this line carries the meaning. */
-.free-slot-hint {
-    margin-bottom: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 5px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    background: #f1f5f9;
-    color: #334155;
-    border: 1px solid #cbd5e0;
-}
-
-/* The "nothing is free" case is a dead end rather than an answer, so it gets
-   amber — still outside the green/blue course palette. */
-.free-slot-hint.is-empty {
-    background: #fffaf0;
-    color: #7b341e;
-    border-color: #fbd38d;
-}
-
 /* NOT a scroll container by default. An overflow-x other than visible makes
    this the scrolling ancestor for everything inside it, and a sticky <thead>
    would then anchor to a box that never scrolls vertically — i.e. it would
@@ -1091,24 +1064,6 @@ th {
     .agenda-body .course-name {
         white-space: normal;
         overflow: visible;
-    }
-
-    /* A free slot is a real row, quieter than a class but not invisible —
-       it is an answer, not an absence. */
-    .agenda-slot.is-free .agenda-time {
-        color: #a0aec0;
-        font-weight: 600;
-    }
-
-    .agenda-free {
-        display: block;
-        font-size: 0.74rem;
-        font-weight: 600;
-        color: #4a5568;
-        background: #f1f5f9;
-        border: 1px dashed #cbd5e0;
-        border-radius: 4px;
-        padding: 0.4rem 0.55rem;
     }
 
     .agenda-empty {

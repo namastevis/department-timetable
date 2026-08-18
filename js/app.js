@@ -755,55 +755,23 @@ function renderGrid() {
     });
 
     renderAgenda(visible, holidayByDay);
-    highlightFreeSlots(holidayByDay);
-}
-
-// When two or more people are selected, every cell that came out empty is a
-// slot where all of them are free — so the note above the grid just states
-// that and counts them.
-//
-// The empty cells are deliberately NOT tinted. A green wash read as the same
-// family as the green semester cards, so "free" and "a semester class is here"
-// looked alike; and with the grid filtered to two or three people the blank
-// cells are already the obvious thing on screen. The note carries the meaning,
-// the whitespace carries the answer.
-//
-// Below two people it stays off: one person's gaps aren't a common free slot.
-function highlightFreeSlots(holidayByDay) {
-    const hint = document.getElementById("freeSlotHint");
-    const count = selectedFaculty.size;
-
-    if (count < 2) {
-        hint.hidden = true;
-        return;
-    }
-
-    let free = 0;
-    document.querySelectorAll("td.day-cell").forEach(cell => {
-        if (cell.children.length) return;               // somebody is teaching
-        if (holidayByDay[cell.dataset.day]) return;     // holiday, not a usable slot
-        free++;
-    });
-
-    hint.hidden = false;
-    hint.textContent = free
-        ? `All ${count} selected faculty are free in ${free} slot${free === 1 ? "" : "s"} this week — marked below.`
-        : `No slot this week is free for all ${count} selected faculty. Try the next week.`;
-    hint.classList.toggle("is-empty", free === 0);
 }
 
 // ============================================================
 // Phone view — day tabs + agenda
 //
-// The same filtered data as the grid, laid out one day at a time. A class
-// appears once per day at its starting slot rather than once per slot, so a
-// 2:15-6:10 class is a single row instead of four.
+// Identical to the desktop grid, one day wide: the ten GRID_SLOTS are the
+// rows, always, with the grid's own labels, and each row lists exactly what
+// the corresponding grid cell contains. A class spanning four slots appears
+// in all four, same as desktop. Empty rows stay blank, same as an empty cell.
 // ============================================================
 
 let activeDay = "Mon";
 
 function initDayTabs() {
-    document.getElementById("dayTabs").addEventListener("click", e => {
+    const tabs = document.getElementById("dayTabs");
+    if (!tabs) return;
+    tabs.addEventListener("click", e => {
         const tab = e.target.closest(".day-tab");
         if (!tab) return;
         activeDay = tab.dataset.day;
@@ -825,8 +793,6 @@ function renderDayTabs() {
     }).join("");
 }
 
-// Cards are built by the same markup as the grid, so the delegated click
-// handler and the detail panel work here with no extra code.
 function renderAgenda(visible, holidayByDay) {
     const wrap = document.getElementById("agendaView");
     if (!wrap) return;
@@ -837,14 +803,6 @@ function renderAgenda(visible, holidayByDay) {
         return;
     }
 
-    // Identical to the desktop grid, one day wide. The ten time slots in
-    // GRID_SLOTS are the rows, always, in order, with the same labels the
-    // grid's time column uses — and each row lists every class occupying that
-    // slot, exactly as the corresponding grid cell does. A class running
-    // 14:15-18:10 therefore appears in all four of its rows, same as desktop.
-    const n = selectedFaculty.size;
-    const emptyLabel = n >= 2 ? `Free for all ${n} selected` : n === 1 ? "Free" : "No classes";
-
     wrap.innerHTML = GRID_SLOTS.map(slot => {
         const here = [];
         visible.forEach(item => item.sessions.forEach(session => {
@@ -854,15 +812,15 @@ function renderAgenda(visible, holidayByDay) {
         }));
 
         const [from, to] = (SLOT_LABELS[slot] || slot).split(" - ");
-        return `<div class="agenda-slot${here.length ? "" : " is-free"}">
+        return `<div class="agenda-slot">
             <div class="agenda-time">${from}<em>${to || ""}</em></div>
-            <div class="agenda-body">${here.length
-                ? here.map(({ item, session }) => agendaCard(item, session)).join("")
-                : `<span class="agenda-free">${emptyLabel}</span>`}</div>
+            <div class="agenda-body">${here.map(({ item, session }) => agendaCard(item, session)).join("")}</div>
         </div>`;
     }).join("");
 }
 
+// Same markup as a grid card, so the delegated click handler and the detail
+// panel work here with no extra code.
 function agendaCard(item, session) {
     const venue = session.venue || item.venue || "";
     const badge = item.sectionLabel ? `<span class="badge badge-section">${item.sectionLabel}</span>` : "";
