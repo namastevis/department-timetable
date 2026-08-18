@@ -1093,6 +1093,24 @@ th {
         overflow: visible;
     }
 
+    /* A free slot is a real row, quieter than a class but not invisible —
+       it is an answer, not an absence. */
+    .agenda-slot.is-free .agenda-time {
+        color: #a0aec0;
+        font-weight: 600;
+    }
+
+    .agenda-free {
+        display: block;
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: #4a5568;
+        background: #f1f5f9;
+        border: 1px dashed #cbd5e0;
+        border-radius: 4px;
+        padding: 0.4rem 0.55rem;
+    }
+
     .agenda-empty {
         font-size: 0.82rem;
         color: #a0aec0;

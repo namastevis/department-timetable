@@ -787,7 +787,7 @@ function highlightFreeSlots(holidayByDay) {
 
     hint.hidden = false;
     hint.textContent = free
-        ? `Empty cells below are free for all ${count} selected faculty this week — ${free} slot${free === 1 ? "" : "s"}.`
+        ? `All ${count} selected faculty are free in ${free} slot${free === 1 ? "" : "s"} this week — marked below.`
         : `No slot this week is free for all ${count} selected faculty. Try the next week.`;
     hint.classList.toggle("is-empty", free === 0);
 }
@@ -853,19 +853,40 @@ function renderAgenda(visible, holidayByDay) {
         groups.get(key).here.push({ item, session });
     }));
 
-    const rows = [...groups.values()].sort((a, b) =>
+    let rows = [...groups.values()].sort((a, b) =>
         a.startIdx - b.startIdx || a.range.localeCompare(b.range));
+
+    // With two or more faculty selected the grid's whole point is the slots
+    // they are ALL free in — on desktop those are the empty cells. Listing
+    // only the classes would throw that answer away, so the free slots are
+    // listed too. A slot counts as busy if any visible session covers it, not
+    // merely starts in it: a 14:15-18:10 class occupies 15:15 and 16:15 as
+    // well, and calling those free would be wrong.
+    if (selectedFaculty.size >= 2) {
+        const covered = new Set();
+        visible.forEach(item => item.sessions.forEach(session => {
+            if (session.day !== activeDay) return;
+            session.timeSlots.forEach(slot => covered.add(slot));
+        }));
+        GRID_SLOTS.forEach((slot, idx) => {
+            if (covered.has(slot)) return;
+            rows.push({ startIdx: idx, range: SLOT_LABELS[slot] || slot, here: [], free: true });
+        });
+        rows = rows.sort((a, b) => a.startIdx - b.startIdx || a.range.localeCompare(b.range));
+    }
 
     if (!rows.length) {
         wrap.innerHTML = `<p class="agenda-empty">No classes on ${DAY_LABELS[activeDay]} this week.</p>`;
         return;
     }
 
-    wrap.innerHTML = rows.map(({ range, here }) => {
+    wrap.innerHTML = rows.map(({ range, here, free }) => {
         const [from, to] = range.split(" - ");
-        return `<div class="agenda-slot">
+        return `<div class="agenda-slot${free ? " is-free" : ""}">
             <div class="agenda-time">${from}<em>${to || ""}</em></div>
-            <div class="agenda-body">${here.map(({ item, session }) => agendaCard(item, session)).join("")}</div>
+            <div class="agenda-body">${free
+                ? `<span class="agenda-free">Free for all ${selectedFaculty.size} selected</span>`
+                : here.map(({ item, session }) => agendaCard(item, session)).join("")}</div>
         </div>`;
     }).join("");
 }
