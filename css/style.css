@@ -927,18 +927,23 @@ th {
        jumps to the current week. Full wording stays in title/aria-label. */
     #jumpToTodayBtn {
         font-size: 0;
-        padding: 0.42rem 0.55rem;
+        padding: 0.3rem 0.45rem;
         margin-right: 0;
         flex: none;
         align-self: center;
+        border-radius: 6px;
     }
 
+    /* Two short lines rather than one long one, so the button stays narrow
+       next to the week label. pre-line renders the \n in data-short. */
     #jumpToTodayBtn::after {
         content: attr(data-short);
-        font-size: 0.68rem;
+        display: block;
+        font-size: 0.62rem;
         font-weight: 600;
-        line-height: 1;
-        white-space: nowrap;
+        line-height: 1.1;
+        white-space: pre-line;
+        text-align: center;
     }
 
     /* Fixed square rather than stretching to the toolbar's full height. */

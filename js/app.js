@@ -569,7 +569,9 @@ function updateJumpButtonLabel() {
     btn.setAttribute("aria-label", label);
     // Phones show a shortened wording rather than an icon — "↻" gave no clue
     // what it would do. CSS renders this via ::after at phone widths.
-    btn.dataset.short = label.includes("Current") ? "This week" : "Term start";
+    // Two lines on a phone so the button stays narrow; the newline is
+    // rendered by white-space: pre-line on the ::after content.
+    btn.dataset.short = label.includes("Current") ? "This\nweek" : "Term\nstart";
 }
 
 function setupEventListeners() {
@@ -835,27 +837,37 @@ function renderAgenda(visible, holidayByDay) {
         return;
     }
 
-    const rows = [];
-    GRID_SLOTS.forEach(slot => {
-        const here = [];
-        visible.forEach(item => item.sessions.forEach(session => {
-            if (session.day !== activeDay) return;
-            if (session.timeSlots[0] !== slot) return;   // once, at its start
-            here.push({ item, session });
-        }));
-        if (here.length) rows.push({ slot, here });
-    });
+    // Grouped by the session's FULL time range, not by its starting slot.
+    // Grouping by start alone was the bug behind mobile showing wrong end
+    // times: a class running 14:15-18:10 sat in a row labelled with the
+    // 14:15 SLOT's end (15:10), so every duration on the phone read short.
+    // Keying on the range means the label is true for every card under it.
+    const groups = new Map();
+    visible.forEach(item => item.sessions.forEach(session => {
+        if (session.day !== activeDay) return;
+        const startIdx = GRID_SLOTS.indexOf(session.timeSlots[0]);
+        if (startIdx === -1) return;
+        const range = sessionTimeRange(session);
+        const key = `${String(startIdx).padStart(2, "0")}|${range}`;
+        if (!groups.has(key)) groups.set(key, { startIdx, range, here: [] });
+        groups.get(key).here.push({ item, session });
+    }));
+
+    const rows = [...groups.values()].sort((a, b) =>
+        a.startIdx - b.startIdx || a.range.localeCompare(b.range));
 
     if (!rows.length) {
         wrap.innerHTML = `<p class="agenda-empty">No classes on ${DAY_LABELS[activeDay]} this week.</p>`;
         return;
     }
 
-    wrap.innerHTML = rows.map(({ slot, here }) => `
-        <div class="agenda-slot">
-            <div class="agenda-time">${slot}<em>${(SLOT_LABELS[slot] || "").split(" - ")[1] || ""}</em></div>
+    wrap.innerHTML = rows.map(({ range, here }) => {
+        const [from, to] = range.split(" - ");
+        return `<div class="agenda-slot">
+            <div class="agenda-time">${from}<em>${to || ""}</em></div>
             <div class="agenda-body">${here.map(({ item, session }) => agendaCard(item, session)).join("")}</div>
-        </div>`).join("");
+        </div>`;
+    }).join("");
 }
 
 function agendaCard(item, session) {
