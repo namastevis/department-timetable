@@ -837,57 +837,28 @@ function renderAgenda(visible, holidayByDay) {
         return;
     }
 
-    // Every one of the ten grid slots produces a row, so the time axis down
-    // the left is complete and matches the desktop grid. A slot either:
-    //   - starts one or more classes  -> a row per distinct time range
-    //   - is covered by a class that started earlier -> a quiet "continues" row
-    //   - is covered by nothing -> a free row
-    // Classes are grouped by their FULL range, not by starting slot: grouping
-    // by start alone was the bug that made every mobile end time read short.
-    const groups = new Map();
-    const covered = new Set();
-    visible.forEach(item => item.sessions.forEach(session => {
-        if (session.day !== activeDay) return;
-        session.timeSlots.forEach(slot => covered.add(slot));
-        const startIdx = GRID_SLOTS.indexOf(session.timeSlots[0]);
-        if (startIdx === -1) return;
-        const range = sessionTimeRange(session);
-        const key = `${startIdx}|${range}`;
-        if (!groups.has(key)) groups.set(key, { startIdx, range, here: [] });
-        groups.get(key).here.push({ item, session });
-    }));
-
-    // Wording depends on what the empty row is telling you. With people
-    // selected it's an answer ("they are all free then"); with nothing
-    // selected it's just an empty slot.
+    // Identical to the desktop grid, one day wide. The ten time slots in
+    // GRID_SLOTS are the rows, always, in order, with the same labels the
+    // grid's time column uses — and each row lists every class occupying that
+    // slot, exactly as the corresponding grid cell does. A class running
+    // 14:15-18:10 therefore appears in all four of its rows, same as desktop.
     const n = selectedFaculty.size;
-    const freeLabel = n >= 2 ? `Free for all ${n} selected` : n === 1 ? "Free" : "No classes";
+    const emptyLabel = n >= 2 ? `Free for all ${n} selected` : n === 1 ? "Free" : "No classes";
 
-    const rows = [];
-    GRID_SLOTS.forEach((slot, idx) => {
-        const starting = [...groups.values()]
-            .filter(g => g.startIdx === idx)
-            .sort((a, b) => a.range.localeCompare(b.range));
-        if (starting.length) {
-            rows.push(...starting);
-            return;
-        }
-        rows.push({
-            range: SLOT_LABELS[slot] || slot,
-            here: [],
-            free: !covered.has(slot),
-            continues: covered.has(slot),
-        });
-    });
+    wrap.innerHTML = GRID_SLOTS.map(slot => {
+        const here = [];
+        visible.forEach(item => item.sessions.forEach(session => {
+            if (session.day !== activeDay) return;
+            if (!session.timeSlots.includes(slot)) return;
+            here.push({ item, session });
+        }));
 
-    wrap.innerHTML = rows.map(({ range, here, free, continues }) => {
-        const [from, to] = range.split(" - ");
-        return `<div class="agenda-slot${free ? " is-free" : ""}${continues ? " is-continues" : ""}">
+        const [from, to] = (SLOT_LABELS[slot] || slot).split(" - ");
+        return `<div class="agenda-slot${here.length ? "" : " is-free"}">
             <div class="agenda-time">${from}<em>${to || ""}</em></div>
-            <div class="agenda-body">${
-                free ? `<span class="agenda-free">${freeLabel}</span>`
-                : continues ? `<span class="agenda-continues">continues</span>`
-                : here.map(({ item, session }) => agendaCard(item, session)).join("")}</div>
+            <div class="agenda-body">${here.length
+                ? here.map(({ item, session }) => agendaCard(item, session)).join("")
+                : `<span class="agenda-free">${emptyLabel}</span>`}</div>
         </div>`;
     }).join("");
 }
