@@ -1,11 +1,26 @@
-// Auto-generated from "Time-table Term1, Sem 3, 5 & 7 - AY 2026-27.xlsx"
-// Columns used: Semester/Term (C), Section ID (D), Course Code (E), Course Title (F),
-// Credits (G), Regular/Visiting (M), Primary Faculty (N), Schedule (O).
-// Row 42 (MUSC306) excluded - flagged "Not Offering" in the source sheet.
+// Auto-generated from "Final Timetable  AY 2026-27 S1.xlsx" (replaces the
+// earlier "Time-table Term1, Sem 3, 5 & 7 - AY 2026-27.xlsx Updated Version").
+// Columns used: Section ID (C), Course Code (D), Course Title (E), Credits (F),
+// Faculty Name (G), Schedule (J), Venue (M).
 //
 // Each entry is one course-section (56 total). "sessions" lists every weekday
-// that section meets, each with its own grid time slots (a section can meet at
-// different times on different days, e.g. DESG218 Sec B: Tue 2:15-5:10pm, Wed 4:15-6:10pm).
+// that section meets, each with its own grid time slots and its own venue (a
+// section can meet at different times AND in different rooms on different days,
+// e.g. DESG215 Sec A: Mon/Wed in ARB002, Tue in ARB104). The item-level "venue"
+// is the single room when all sessions share one, otherwise null - read
+// session.venue for the per-day room.
+//
+// Notes on this revision:
+//   - The new sheet has no Regular/Visiting column; facultyStatus is carried
+//     over from the previous sheet by faculty name. Prof. Madhan Raj (new on
+//     DESG319) is recorded as visiting.
+//   - "Prof. Sameer Dubley" on MUSC101 is normalised to "Prof. Sameer Dublay"
+//     (same person as on MUSC206 / MUSC303).
+//   - Prof. Saraang Gangoo is now spelt "Prof. Sarang Ganoo" per the new sheet.
+//   - PGPE426 (PGPETERM1, batch PGPEI2026) is new: treated as a Term course and
+//     tagged with program: "PGPE" so it can be styled/filtered separately.
+//   - Sem-5 DESG361 is now DESG362; THEA310 is 3 credits (was 4); the duplicate
+//     UGSEM7B DESG381 row is gone; DANC105 moved to section UGTERM1A.
 const RAW_TIMETABLE_DATA = [
   {
     "semTerm": "Sem-3",
@@ -18,6 +33,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
+    "venue": null,
     "startDate": "2026-08-17",
     "endDate": "2026-09-09",
     "sessions": [
@@ -28,7 +44,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "ARB002"
       },
       {
         "day": "Tue",
@@ -37,7 +54,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "ARB104"
       },
       {
         "day": "Wed",
@@ -46,7 +64,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "ARB002"
       }
     ]
   },
@@ -61,6 +80,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM3B",
     "sectionLabel": "B",
+    "venue": null,
     "startDate": "2026-08-17",
     "endDate": "2026-09-09",
     "sessions": [
@@ -71,7 +91,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "Arjuna Seminar Room"
       },
       {
         "day": "Tue",
@@ -80,7 +101,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "ARB002"
       },
       {
         "day": "Wed",
@@ -89,7 +111,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "Arjuna Seminar Room"
       }
     ]
   },
@@ -104,6 +127,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
+    "venue": null,
     "startDate": "2026-09-14",
     "endDate": "2026-10-07",
     "sessions": [
@@ -114,7 +138,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "Arjuna Seminar Room"
       },
       {
         "day": "Tue",
@@ -123,7 +148,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "ARB002"
       },
       {
         "day": "Wed",
@@ -132,7 +158,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "Arjuna Seminar Room"
       }
     ]
   },
@@ -147,6 +174,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM3B",
     "sectionLabel": "B",
+    "venue": "Visual Art Studio",
     "startDate": "2026-09-14",
     "endDate": "2026-10-07",
     "sessions": [
@@ -157,7 +185,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "Visual Art Studio"
       },
       {
         "day": "Tue",
@@ -166,7 +195,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "Visual Art Studio"
       },
       {
         "day": "Wed",
@@ -175,7 +205,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "Visual Art Studio"
       }
     ]
   },
@@ -190,6 +221,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
+    "venue": "Visual Art Studio",
     "startDate": "2026-10-12",
     "endDate": "2026-12-09",
     "sessions": [
@@ -199,14 +231,16 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15",
           "16:15"
-        ]
+        ],
+        "venue": "Visual Art Studio"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Visual Art Studio"
       }
     ]
   },
@@ -221,6 +255,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM3B",
     "sectionLabel": "B",
+    "venue": "APJ Design Lab",
     "startDate": "2026-10-12",
     "endDate": "2026-12-09",
     "sessions": [
@@ -230,14 +265,16 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15",
           "16:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       }
     ]
   },
@@ -252,6 +289,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM3",
     "sectionLabel": null,
+    "venue": "APJ104",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -261,7 +299,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ104"
       }
     ]
   },
@@ -276,6 +315,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
+    "venue": "APJ103",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -286,7 +326,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ103"
       }
     ]
   },
@@ -301,6 +342,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
+    "venue": "ARB001",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -309,14 +351,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "ARB001"
       },
       {
         "day": "Fri",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "ARB001"
       }
     ]
   },
@@ -331,6 +375,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM3B",
     "sectionLabel": "B",
+    "venue": "Arjuna Seminar Room 001",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -339,14 +384,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Arjuna Seminar Room 001"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Arjuna Seminar Room 001"
       }
     ]
   },
@@ -361,6 +408,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM3B",
     "sectionLabel": "B",
+    "venue": "APJ Design Lab",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -369,14 +417,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "08:00",
           "09:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "08:00",
           "09:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       }
     ]
   },
@@ -391,6 +441,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM3",
     "sectionLabel": null,
+    "venue": "APJ Focus Room 202",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -399,14 +450,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "08:00",
           "09:00"
-        ]
+        ],
+        "venue": "APJ Focus Room 202"
       },
       {
         "day": "Fri",
         "timeSlots": [
           "08:00",
           "09:00"
-        ]
+        ],
+        "venue": "APJ Focus Room 202"
       }
     ]
   },
@@ -421,6 +474,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM3",
     "sectionLabel": null,
+    "venue": "Arjuna Conditioning Studio",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -429,7 +483,8 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Arjuna Conditioning Studio"
       },
       {
         "day": "Fri",
@@ -437,7 +492,8 @@ const RAW_TIMETABLE_DATA = [
           "13:00",
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Arjuna Conditioning Studio"
       }
     ]
   },
@@ -452,6 +508,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM3",
     "sectionLabel": null,
+    "venue": "Preview Theater (Kabir)",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -460,7 +517,8 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Preview Theater (Kabir)"
       },
       {
         "day": "Wed",
@@ -468,7 +526,8 @@ const RAW_TIMETABLE_DATA = [
           "13:00",
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Preview Theater (Kabir)"
       }
     ]
   },
@@ -483,6 +542,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5A",
     "sectionLabel": "A",
+    "venue": "Visual Art Studio",
     "startDate": "2026-10-01",
     "endDate": "2026-12-12",
     "sessions": [
@@ -491,14 +551,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Visual Art Studio"
       },
       {
         "day": "Fri",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Visual Art Studio"
       }
     ]
   },
@@ -509,10 +571,11 @@ const RAW_TIMETABLE_DATA = [
     "code": "DESG319",
     "title": "Introduction to Artificial Intelligence & Machine Learning",
     "credits": 3,
-    "faculty": "Prof. Tapan Aslot",
+    "faculty": "Prof. Madhan Raj",
     "facultyStatus": "visiting",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
+    "venue": "APJ Design Lab",
     "startDate": "2026-09-07",
     "endDate": "2026-09-25",
     "sessions": [
@@ -521,7 +584,8 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Tue",
@@ -530,14 +594,16 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Thu",
@@ -546,7 +612,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Fri",
@@ -555,7 +622,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       }
     ]
   },
@@ -570,6 +638,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5A",
     "sectionLabel": "A",
+    "venue": "APJ Design Lab",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -578,14 +647,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       }
     ]
   },
@@ -600,6 +671,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
+    "venue": "APJ Design Lab",
     "startDate": "2026-08-17",
     "endDate": "2026-09-04",
     "sessions": [
@@ -608,7 +680,8 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Tue",
@@ -617,14 +690,16 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Thu",
@@ -633,7 +708,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Fri",
@@ -642,7 +718,8 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       }
     ]
   },
@@ -657,6 +734,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5A",
     "sectionLabel": "A",
+    "venue": "APJ Focus Room 202",
     "startDate": "2026-09-29",
     "endDate": "2026-12-12",
     "sessions": [
@@ -665,14 +743,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "APJ Focus Room 202"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "APJ Focus Room 202"
       }
     ]
   },
@@ -687,6 +767,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5B",
     "sectionLabel": "B",
+    "venue": "Raman 001",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -695,14 +776,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Raman 001"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Raman 001"
       }
     ]
   },
@@ -717,6 +800,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5C",
     "sectionLabel": "C",
+    "venue": "Raman 001",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -725,14 +809,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Raman 001"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Raman 001"
       }
     ]
   },
@@ -740,13 +826,14 @@ const RAW_TIMETABLE_DATA = [
     "semTerm": "Sem-5",
     "courseType": "semester",
     "semesterNumber": "5",
-    "code": "DESG361",
+    "code": "DESG362",
     "title": "Special Topics in Design (Visual Storytelling)",
     "credits": 3,
     "faculty": "Prof. Sherline Pimenta",
     "facultyStatus": "regular",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
+    "venue": "Learning Commons A & B",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -756,7 +843,8 @@ const RAW_TIMETABLE_DATA = [
           "13:00",
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Learning Commons A & B"
       }
     ]
   },
@@ -771,6 +859,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5B",
     "sectionLabel": "B",
+    "venue": null,
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -779,14 +868,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
+        ],
+        "venue": "Raman 001"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "11:00",
           "12:00"
-        ]
+        ],
+        "venue": "RNJ002"
       }
     ]
   },
@@ -801,6 +892,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5B",
     "sectionLabel": "B",
+    "venue": "APJ Focus Room 201",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -809,14 +901,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "08:00",
           "09:00"
-        ]
+        ],
+        "venue": "APJ Focus Room 201"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "08:00",
           "09:00"
-        ]
+        ],
+        "venue": "APJ Focus Room 201"
       }
     ]
   },
@@ -831,6 +925,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
+    "venue": "Shanti Niketan Dance Studio",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -839,14 +934,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Shanti Niketan Dance Studio"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Shanti Niketan Dance Studio"
       }
     ]
   },
@@ -861,6 +958,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
+    "venue": "Kalidas",
     "startDate": "2026-09-21",
     "endDate": "2026-12-12",
     "sessions": [
@@ -869,7 +967,8 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Kalidas"
       },
       {
         "day": "Wed",
@@ -877,7 +976,8 @@ const RAW_TIMETABLE_DATA = [
           "13:00",
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Kalidas"
       }
     ]
   },
@@ -892,6 +992,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
+    "venue": null,
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -900,14 +1001,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Chandragupta Focus Room 301"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Kasturba Conference Room 008"
       }
     ]
   },
@@ -922,6 +1025,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
+    "venue": "Preview Theater (Kabir)",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -930,7 +1034,8 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Preview Theater (Kabir)"
       },
       {
         "day": "Fri",
@@ -938,7 +1043,8 @@ const RAW_TIMETABLE_DATA = [
           "13:00",
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Preview Theater (Kabir)"
       }
     ]
   },
@@ -953,6 +1059,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
+    "venue": "Kalidas",
     "startDate": "2026-08-21",
     "endDate": "2026-09-18",
     "sessions": [
@@ -961,14 +1068,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Kalidas"
       },
       {
         "day": "Tue",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Kalidas"
       },
       {
         "day": "Wed",
@@ -976,14 +1085,16 @@ const RAW_TIMETABLE_DATA = [
           "13:00",
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Kalidas"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Kalidas"
       },
       {
         "day": "Fri",
@@ -991,7 +1102,8 @@ const RAW_TIMETABLE_DATA = [
           "13:00",
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Kalidas"
       }
     ]
   },
@@ -1006,6 +1118,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
+    "venue": null,
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1014,14 +1127,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Learning Commons A&B"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "ARB002"
       }
     ]
   },
@@ -1036,6 +1151,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM7A",
     "sectionLabel": "A",
+    "venue": "Arjuna Seminar Room 001",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1044,14 +1160,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "Arjuna Seminar Room 001"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "16:15",
           "17:15"
-        ]
+        ],
+        "venue": "Arjuna Seminar Room 001"
       }
     ]
   },
@@ -1066,6 +1184,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
+    "venue": "ARB103",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1075,7 +1194,8 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15",
           "16:15"
-        ]
+        ],
+        "venue": "ARB103"
       }
     ]
   },
@@ -1090,6 +1210,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
+    "venue": "APJ103",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1098,14 +1219,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "APJ103"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "APJ103"
       }
     ]
   },
@@ -1116,10 +1239,11 @@ const RAW_TIMETABLE_DATA = [
     "code": "DESG381",
     "title": "Capstone Project 1",
     "credits": 3,
-    "faculty": "Prof. Saraang Gangoo",
+    "faculty": "Prof. Sarang Ganoo",
     "facultyStatus": "visiting",
     "sectionId": "UGSEM7A",
     "sectionLabel": "A",
+    "venue": null,
     "startDate": "2026-08-17",
     "endDate": "2026-09-18",
     "sessions": [
@@ -1128,35 +1252,40 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "ARB202"
       },
       {
         "day": "Tue",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Shantiniketan Seminar Room"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Shantiniketan Seminar Room"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Shantiniketan Seminar Room"
       },
       {
         "day": "Fri",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "ARB202"
       }
     ]
   },
@@ -1171,6 +1300,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM7B",
     "sectionLabel": "B",
+    "venue": null,
     "startDate": "2026-10-26",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1179,35 +1309,40 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Amrita Shergil Conference Room 008"
       },
       {
         "day": "Tue",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "ARB104"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Amrita Shergil Conference Room 008"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "TBD"
       },
       {
         "day": "Fri",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Amrita Shergil Conference Room 008"
       }
     ]
   },
@@ -1222,6 +1357,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM7B",
     "sectionLabel": "B",
+    "venue": "APJ Design Lab",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1230,44 +1366,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "08:00",
           "09:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "08:00",
           "09:00"
-        ]
-      }
-    ]
-  },
-  {
-    "semTerm": "Sem-7",
-    "courseType": "semester",
-    "semesterNumber": "7",
-    "code": "DESG381",
-    "title": "Capstone Project 1",
-    "credits": 3,
-    "faculty": "Prof. Smita Kelkar",
-    "facultyStatus": "visiting",
-    "sectionId": "UGSEM7B",
-    "sectionLabel": "B",
-    "startDate": "2026-08-17",
-    "endDate": "2026-12-12",
-    "sessions": [
-      {
-        "day": "Mon",
-        "timeSlots": [
-          "08:00",
-          "09:00"
-        ]
-      },
-      {
-        "day": "Wed",
-        "timeSlots": [
-          "08:00",
-          "09:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       }
     ]
   },
@@ -1282,6 +1390,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
+    "venue": "Shanti Niketan Dance Studio",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1290,7 +1399,8 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Shanti Niketan Dance Studio"
       },
       {
         "day": "Wed",
@@ -1298,7 +1408,8 @@ const RAW_TIMETABLE_DATA = [
           "13:00",
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Shanti Niketan Dance Studio"
       }
     ]
   },
@@ -1308,11 +1419,12 @@ const RAW_TIMETABLE_DATA = [
     "semesterNumber": "7",
     "code": "THEA310",
     "title": "Globalization and contemporary theater in India (Theory)",
-    "credits": 4,
+    "credits": 3,
     "faculty": "Prof. Ashutosh Potdar",
     "facultyStatus": "regular",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
+    "venue": "Focus Room 201 Chandragupta West Wing",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1320,14 +1432,16 @@ const RAW_TIMETABLE_DATA = [
         "day": "Wed",
         "timeSlots": [
           "14:15"
-        ]
+        ],
+        "venue": "Focus Room 201 Chandragupta West Wing"
       },
       {
         "day": "Fri",
         "timeSlots": [
           "14:15",
           "15:15"
-        ]
+        ],
+        "venue": "Focus Room 201 Chandragupta West Wing"
       }
     ]
   },
@@ -1335,43 +1449,14 @@ const RAW_TIMETABLE_DATA = [
     "semTerm": "Term 1",
     "courseType": "term",
     "semesterNumber": null,
-    "code": "THEA101",
-    "title": "Introduction to Drama and Theatre",
+    "code": "DESG102",
+    "title": "Materials and Processes",
     "credits": 2,
-    "faculty": "Prof. Ashutosh Potdar",
+    "faculty": "Prof. Avani Chaturvedi",
     "facultyStatus": "regular",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
-    "startDate": "2026-08-17",
-    "endDate": "2026-10-10",
-    "sessions": [
-      {
-        "day": "Tue",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
-      },
-      {
-        "day": "Fri",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
-      }
-    ]
-  },
-  {
-    "semTerm": "Term 1",
-    "courseType": "term",
-    "semesterNumber": null,
-    "code": "THEA102",
-    "title": "Basics of Theatre Arts",
-    "credits": 2,
-    "faculty": "Prof. Aanand Chabukswar",
-    "facultyStatus": "visiting",
-    "sectionId": "UGTERM1A",
-    "sectionLabel": "A",
+    "venue": "APJ Design Lab",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1380,44 +1465,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
-      }
-    ]
-  },
-  {
-    "semTerm": "Term 1",
-    "courseType": "term",
-    "semesterNumber": null,
-    "code": "THEA102",
-    "title": "Basics of Theatre Arts",
-    "credits": 2,
-    "faculty": "Prof. Shachi Vaiddya",
-    "facultyStatus": "visiting",
-    "sectionId": "UGTERM1B",
-    "sectionLabel": "B",
-    "startDate": "2026-08-17",
-    "endDate": "2026-10-10",
-    "sessions": [
-      {
-        "day": "Mon",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
-      },
-      {
-        "day": "Thu",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       }
     ]
   },
@@ -1432,6 +1489,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
+    "venue": null,
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1440,14 +1498,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "ARB002"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "APJ103"
       }
     ]
   },
@@ -1455,13 +1515,14 @@ const RAW_TIMETABLE_DATA = [
     "semTerm": "Term 1",
     "courseType": "term",
     "semesterNumber": null,
-    "code": "MUSC101",
-    "title": "Principles of Music",
+    "code": "DESG107",
+    "title": "Design Studio (Learning by Doing)",
     "credits": 2,
-    "faculty": "Prof. Prachi Vaidya",
-    "facultyStatus": "visiting",
+    "faculty": "Prof. Pathik Desai",
+    "facultyStatus": "regular",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
+    "venue": "APJ Design Lab",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1470,14 +1531,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Fri",
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       }
     ]
   },
@@ -1486,13 +1549,17 @@ const RAW_TIMETABLE_DATA = [
     "courseType": "term",
     "semesterNumber": null,
     "code": "DANC101",
-    "title": "Introduction to Dance",
+    "title": "Introduction to Dance (Elementary)",
     "credits": 2,
     "faculty": "Prof. Rujuta Soman / Prof. Vrushali Lele",
-    "facultyList": ["Prof. Rujuta Soman", "Prof. Vrushali Lele"],
+    "facultyList": [
+      "Prof. Rujuta Soman",
+      "Prof. Vrushali Lele"
+    ],
     "facultyStatus": "visiting",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
+    "venue": "Shanti Niketan Dance Studio",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1501,14 +1568,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "Shanti Niketan Dance Studio"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "Shanti Niketan Dance Studio"
       }
     ]
   },
@@ -1516,29 +1585,32 @@ const RAW_TIMETABLE_DATA = [
     "semTerm": "Term 1",
     "courseType": "term",
     "semesterNumber": null,
-    "code": "DANC105",
-    "title": "Introduction to Contemporary Dance",
+    "code": "THEA101",
+    "title": "Introduction to Drama and Theatre",
     "credits": 2,
-    "faculty": "Prof. Sayli Kulkarni",
-    "facultyStatus": "visiting",
+    "faculty": "Prof. Ashutosh Potdar",
+    "facultyStatus": "regular",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
+    "venue": null,
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
       {
         "day": "Tue",
         "timeSlots": [
-          "10:00",
-          "11:00"
-        ]
+          "12:00",
+          "13:00"
+        ],
+        "venue": "BHC001"
       },
       {
-        "day": "Thu",
+        "day": "Fri",
         "timeSlots": [
-          "10:00",
-          "11:00"
-        ]
+          "12:00",
+          "13:00"
+        ],
+        "venue": "ARB002"
       }
     ]
   },
@@ -1546,13 +1618,80 @@ const RAW_TIMETABLE_DATA = [
     "semTerm": "Term 1",
     "courseType": "term",
     "semesterNumber": null,
-    "code": "DESG101",
-    "title": "Elements and Principles of Design",
+    "code": "THEA102",
+    "title": "Basics of Theatre Arts",
     "credits": 2,
-    "faculty": "Prof. Suniti Vadalkar",
-    "facultyStatus": "regular",
+    "faculty": "Prof. Aanand Chabukswar",
+    "facultyStatus": "visiting",
     "sectionId": "UGTERM1A",
     "sectionLabel": "A",
+    "venue": "Kalidas",
+    "startDate": "2026-08-17",
+    "endDate": "2026-10-10",
+    "sessions": [
+      {
+        "day": "Mon",
+        "timeSlots": [
+          "10:00",
+          "11:00"
+        ],
+        "venue": "Kalidas"
+      },
+      {
+        "day": "Wed",
+        "timeSlots": [
+          "10:00",
+          "11:00"
+        ],
+        "venue": "Kalidas"
+      }
+    ]
+  },
+  {
+    "semTerm": "Term 1",
+    "courseType": "term",
+    "semesterNumber": null,
+    "code": "SCLP101",
+    "title": "Introduction to Sculpture",
+    "credits": 2,
+    "faculty": "Prof. Oshin Patil",
+    "facultyStatus": "visiting",
+    "sectionId": "UGTERM1A",
+    "sectionLabel": "A",
+    "venue": "Sculpture Studio",
+    "startDate": "2026-08-17",
+    "endDate": "2026-10-10",
+    "sessions": [
+      {
+        "day": "Tue",
+        "timeSlots": [
+          "12:00",
+          "13:00"
+        ],
+        "venue": "Sculpture Studio"
+      },
+      {
+        "day": "Fri",
+        "timeSlots": [
+          "12:00",
+          "13:00"
+        ],
+        "venue": "Sculpture Studio"
+      }
+    ]
+  },
+  {
+    "semTerm": "Term 1",
+    "courseType": "term",
+    "semesterNumber": null,
+    "code": "SCLP101",
+    "title": "Introduction to Sculpture",
+    "credits": 2,
+    "faculty": "Prof. Oshin Patil",
+    "facultyStatus": "visiting",
+    "sectionId": "UGTERM1B",
+    "sectionLabel": "B",
+    "venue": "Sculpture Studio",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1561,14 +1700,49 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "Sculpture Studio"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "Sculpture Studio"
+      }
+    ]
+  },
+  {
+    "semTerm": "Term 1",
+    "courseType": "term",
+    "semesterNumber": null,
+    "code": "THEA102",
+    "title": "Basics of Theatre Arts",
+    "credits": 2,
+    "faculty": "Prof. Shachi Vaiddya",
+    "facultyStatus": "visiting",
+    "sectionId": "UGTERM1B",
+    "sectionLabel": "B",
+    "venue": "Kalidas",
+    "startDate": "2026-08-17",
+    "endDate": "2026-10-10",
+    "sessions": [
+      {
+        "day": "Mon",
+        "timeSlots": [
+          "12:00",
+          "13:00"
+        ],
+        "venue": "Kalidas"
+      },
+      {
+        "day": "Thu",
+        "timeSlots": [
+          "12:00",
+          "13:00"
+        ],
+        "venue": "Kalidas"
       }
     ]
   },
@@ -1583,6 +1757,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGTERM1B",
     "sectionLabel": "B",
+    "venue": "APJ Design Lab",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1591,28 +1766,31 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
+        ],
+        "venue": "APJ Design Lab"
       }
     ]
   },
   {
-    "semTerm": "Term 1",
+    "semTerm": "PGPE Term 1",
     "courseType": "term",
     "semesterNumber": null,
-    "code": "DESG102",
-    "title": "Material and Process",
+    "code": "PGPE426",
+    "title": "Design Thinking",
     "credits": 2,
-    "faculty": "Prof. Avani Chaturvedi",
-    "facultyStatus": "regular",
-    "sectionId": "UGTERM1",
+    "faculty": "Prof. Shagun Malavia",
+    "facultyStatus": "visiting",
+    "sectionId": "PGPETERM1",
     "sectionLabel": null,
+    "venue": "Chandragupa East Wing - Conference Room 001",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1621,58 +1799,32 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
+        ],
+        "venue": "Chandragupa East Wing - Conference Room 001"
       },
       {
         "day": "Wed",
         "timeSlots": [
-          "10:00",
-          "11:00"
-        ]
+          "14:15",
+          "15:15"
+        ],
+        "venue": "Chandragupa East Wing - Conference Room 001"
       }
-    ]
+    ],
+    "program": "PGPE"
   },
   {
     "semTerm": "Term 1",
     "courseType": "term",
     "semesterNumber": null,
-    "code": "DRPT102",
-    "title": "Introduction to Drawing",
+    "code": "DANC105",
+    "title": "Introduction to Contemporary Dance",
     "credits": 2,
-    "faculty": "Prof. Swayamsiddha Panigrahi",
-    "facultyStatus": "regular",
+    "faculty": "Prof. Sayli Kulkarni",
+    "facultyStatus": "visiting",
     "sectionId": "UGTERM1A",
     "sectionLabel": "A",
-    "startDate": "2026-08-17",
-    "endDate": "2026-10-10",
-    "sessions": [
-      {
-        "day": "Mon",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
-      },
-      {
-        "day": "Thu",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
-      }
-    ]
-  },
-  {
-    "semTerm": "Term 1",
-    "courseType": "term",
-    "semesterNumber": null,
-    "code": "DRPT102",
-    "title": "Introduction to Drawing",
-    "credits": 2,
-    "faculty": "Prof. Dishant Pradhan",
-    "facultyStatus": "regular",
-    "sectionId": "UGTERM1B",
-    "sectionLabel": "B",
+    "venue": "Kalidas",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1681,74 +1833,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
+        ],
+        "venue": "Kalidas"
       },
       {
         "day": "Thu",
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
-      }
-    ]
-  },
-  {
-    "semTerm": "Term 1",
-    "courseType": "term",
-    "semesterNumber": null,
-    "code": "SCLP101",
-    "title": "Introduction to Sculpture",
-    "credits": 2,
-    "faculty": "Prof. Oshin Patil",
-    "facultyStatus": "visiting",
-    "sectionId": "UGTERM1A",
-    "sectionLabel": "A",
-    "startDate": "2026-08-17",
-    "endDate": "2026-10-10",
-    "sessions": [
-      {
-        "day": "Tue",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
-      },
-      {
-        "day": "Fri",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
-      }
-    ]
-  },
-  {
-    "semTerm": "Term 1",
-    "courseType": "term",
-    "semesterNumber": null,
-    "code": "SCLP101",
-    "title": "Introduction to Sculpture",
-    "credits": 2,
-    "faculty": "Prof. Oshin Patil",
-    "facultyStatus": "visiting",
-    "sectionId": "UGTERM1B",
-    "sectionLabel": "B",
-    "startDate": "2026-08-17",
-    "endDate": "2026-10-10",
-    "sessions": [
-      {
-        "day": "Mon",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
-      },
-      {
-        "day": "Thu",
-        "timeSlots": [
-          "12:00",
-          "13:00"
-        ]
+        ],
+        "venue": "Kalidas"
       }
     ]
   },
@@ -1763,6 +1857,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
+    "venue": "Library Computer Lab",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1771,44 +1866,16 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
+        ],
+        "venue": "Library Computer Lab"
       },
       {
         "day": "Wed",
         "timeSlots": [
           "10:00",
           "11:00"
-        ]
-      }
-    ]
-  },
-  {
-    "semTerm": "Term 1",
-    "courseType": "term",
-    "semesterNumber": null,
-    "code": "DESG107",
-    "title": "Learning by Doing",
-    "credits": 2,
-    "faculty": "Prof. Pathik Desai",
-    "facultyStatus": "regular",
-    "sectionId": "UGTERM1",
-    "sectionLabel": null,
-    "startDate": "2026-08-17",
-    "endDate": "2026-10-10",
-    "sessions": [
-      {
-        "day": "Tue",
-        "timeSlots": [
-          "10:00",
-          "11:00"
-        ]
-      },
-      {
-        "day": "Thu",
-        "timeSlots": [
-          "10:00",
-          "11:00"
-        ]
+        ],
+        "venue": "Library Computer Lab"
       }
     ]
   },
@@ -1823,6 +1890,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "regular",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
+    "venue": "Raman 001",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1831,14 +1899,148 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "Raman 001"
       },
       {
         "day": "Fri",
         "timeSlots": [
           "12:00",
           "13:00"
-        ]
+        ],
+        "venue": "Raman 001"
+      }
+    ]
+  },
+  {
+    "semTerm": "Term 1",
+    "courseType": "term",
+    "semesterNumber": null,
+    "code": "MUSC101",
+    "title": "Principles of Music",
+    "credits": 2,
+    "faculty": "Prof. Sameer Dublay",
+    "facultyStatus": "regular",
+    "sectionId": "UGTERM1",
+    "sectionLabel": null,
+    "venue": "Preview Theater (Kabir)",
+    "startDate": "2026-08-17",
+    "endDate": "2026-10-10",
+    "sessions": [
+      {
+        "day": "Tue",
+        "timeSlots": [
+          "10:00",
+          "11:00"
+        ],
+        "venue": "Preview Theater (Kabir)"
+      },
+      {
+        "day": "Thu",
+        "timeSlots": [
+          "10:00",
+          "11:00"
+        ],
+        "venue": "Preview Theater (Kabir)"
+      }
+    ]
+  },
+  {
+    "semTerm": "Term 1",
+    "courseType": "term",
+    "semesterNumber": null,
+    "code": "DESG101",
+    "title": "Elements and Principles of Design",
+    "credits": 2,
+    "faculty": "Prof. Suniti Vadalkar",
+    "facultyStatus": "regular",
+    "sectionId": "UGTERM1A",
+    "sectionLabel": "A",
+    "venue": "APJ Design Lab",
+    "startDate": "2026-08-17",
+    "endDate": "2026-10-10",
+    "sessions": [
+      {
+        "day": "Mon",
+        "timeSlots": [
+          "12:00",
+          "13:00"
+        ],
+        "venue": "APJ Design Lab"
+      },
+      {
+        "day": "Thu",
+        "timeSlots": [
+          "12:00",
+          "13:00"
+        ],
+        "venue": "APJ Design Lab"
+      }
+    ]
+  },
+  {
+    "semTerm": "Term 1",
+    "courseType": "term",
+    "semesterNumber": null,
+    "code": "DRPT102",
+    "title": "Introduction to Drawing",
+    "credits": 2,
+    "faculty": "Prof. Swayamsiddha Panigrahi",
+    "facultyStatus": "regular",
+    "sectionId": "UGTERM1A",
+    "sectionLabel": "A",
+    "venue": "Raman 001",
+    "startDate": "2026-08-17",
+    "endDate": "2026-10-10",
+    "sessions": [
+      {
+        "day": "Mon",
+        "timeSlots": [
+          "12:00",
+          "13:00"
+        ],
+        "venue": "Raman 001"
+      },
+      {
+        "day": "Thu",
+        "timeSlots": [
+          "12:00",
+          "13:00"
+        ],
+        "venue": "Raman 001"
+      }
+    ]
+  },
+  {
+    "semTerm": "Term 1",
+    "courseType": "term",
+    "semesterNumber": null,
+    "code": "DRPT102",
+    "title": "Introduction to Drawing",
+    "credits": 2,
+    "faculty": "Prof. Dishant Pradhan",
+    "facultyStatus": "regular",
+    "sectionId": "UGTERM1B",
+    "sectionLabel": "B",
+    "venue": "Sculpture Studio",
+    "startDate": "2026-08-17",
+    "endDate": "2026-10-10",
+    "sessions": [
+      {
+        "day": "Tue",
+        "timeSlots": [
+          "10:00",
+          "11:00"
+        ],
+        "venue": "Sculpture Studio"
+      },
+      {
+        "day": "Thu",
+        "timeSlots": [
+          "10:00",
+          "11:00"
+        ],
+        "venue": "Sculpture Studio"
       }
     ]
   }
