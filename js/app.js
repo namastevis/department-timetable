@@ -1076,13 +1076,6 @@ function ensureDetailPanel() {
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// Whole weeks a date range covers, rounded up — "12 Oct to 9 Dec" reads as
-// 9 weeks, not 8.4.
-function weeksBetween(startStr, endStr) {
-    const days = (parseLocalDate(endStr) - parseLocalDate(startStr)) / 86400000 + 1;
-    return Math.round(days / 7);
-}
-
 function prettyDate(dateStr) {
     const d = parseLocalDate(dateStr);
     return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
@@ -1104,15 +1097,6 @@ function detailRow(key, value) {
 
 function openDetail(item, session) {
     const { backdrop, panel } = ensureDetailPanel();
-
-    // A section that doesn't span the whole term is worth flagging — but in
-    // plain numbers, not a label. "9 of the term's 17 weeks" needs no
-    // explaining; the "Short Run" badge that used to sit here did.
-    const termStart = "2026-08-17";
-    const termEnd = item.courseType === "term" ? "2026-10-10" : "2026-12-12";
-    const isPartial = !(item.startDate === termStart && item.endDate === termEnd);
-    const runWeeks = weeksBetween(item.startDate, item.endDate);
-    const termWeeks = weeksBetween(termStart, termEnd);
 
     // Venue belongs to the session, not the course — DESG215 Sec A is in
     // ARB002 on Mon/Wed but ARB104 on Tue — so each session carries its own
@@ -1143,10 +1127,7 @@ function openDetail(item, session) {
             <span class="badge badge-${item.facultyStatus}">${facultyTypeLabel(item.facultyStatus)}</span>
         </div>
         ${detailRow("Faculty", displayFaculty(item.faculty))}
-        ${detailRow("Runs", `${prettyDate(item.startDate)} &rarr; ${prettyDate(item.endDate)}` +
-            (isPartial
-                ? `<span class="detail-note">${runWeeks} of the term's ${termWeeks} weeks</span>`
-                : `<span class="detail-note">the full term</span>`))}
+        ${detailRow("Runs", `${prettyDate(item.startDate)} &rarr; ${prettyDate(item.endDate)}`)}
         ${detailRow("Sessions", `<ul class="session-list">${sessions}</ul>`)}
         ${detailRow("Credits", item.credits)}
         ${detailRow("Cohort", `${item.semTerm} &middot; ${item.sectionId}`)}
