@@ -132,6 +132,7 @@ function initFilters() {
     refreshSemNumberOptions();
     refreshFacultyOptions();
     refreshCourseOptions();
+    refreshVenueOptions();
 }
 
 // Reads the current value of every filter control.
@@ -141,6 +142,7 @@ function getCurrentFilterValues() {
         semNumber: document.getElementById("semNumberFilter").value,
         course: document.getElementById("courseFilter").value,
         faculty: [...selectedFaculty],
+        venue: document.getElementById("venueFilter").value,
         facultyStatus: document.getElementById("facultyStatusFilter").value,
     };
 }
@@ -170,7 +172,19 @@ function itemMatchesFilters(item, filters, skip = []) {
         if (!names.some(n => filters.faculty.includes(n))) return false;
     }
     if (!skip.includes("facultyStatus") && filters.facultyStatus !== "all" && item.facultyStatus !== filters.facultyStatus) return false;
+    // A room belongs to a session, not to the course — DESG215 Sec A is in
+    // ARB002 on Mon/Wed and ARB104 on Tue. So the section survives this filter
+    // if ANY of its sessions is in the chosen room, and the individual
+    // sessions that aren't are dropped when the grid is drawn.
+    if (!skip.includes("venue") && filters.venue !== "all") {
+        if (!item.sessions.some(s => sessionVenue(item, s) === filters.venue)) return false;
+    }
     return true;
+}
+
+// The room a given session actually meets in.
+function sessionVenue(item, session) {
+    return session.venue || item.venue || "";
 }
 
 // Repopulates a <select>'s options, preserving the current selection if it's
@@ -294,12 +308,35 @@ function updateFacultyLabel() {
     renderRailCategories();
 }
 
+// Updates the inputs already on screen rather than re-rendering their markup.
+// Rebuilding innerHTML inside the phone drawer (which is a transformed,
+// position:fixed element) can leave iOS Safari painting the old subtree — the
+// checkboxes stay visually ticked even though the DOM says otherwise. Setting
+// .checked on a live input always repaints.
+function syncRailInputs() {
+    RAIL_CATEGORIES.forEach(cat => {
+        if (cat.faculty) return;
+        const el = document.getElementById(cat.select);
+        if (!el) return;
+        document.querySelectorAll(`input[name="rail-${cat.id}"]`).forEach(radio => {
+            radio.checked = radio.value === el.value;
+            const label = radio.closest(".rail-option");
+            if (label) label.classList.toggle("is-checked", radio.checked);
+        });
+    });
+    document.querySelectorAll(".faculty-checkbox").forEach(cb => {
+        cb.checked = selectedFaculty.has(cb.value);
+    });
+}
+
 function setFacultySelection(names) {
     selectedFaculty.clear();
     names.forEach(n => selectedFaculty.add(n));
     refreshSemNumberOptions();
     refreshCourseOptions();
-    refreshFacultyOptions();
+    refreshVenueOptions();
+    syncRailInputs();
+    updateFacultyLabel();
     renderGrid();
 }
 
@@ -319,6 +356,7 @@ const RAIL_CATEGORIES = [
     { id: "semNumber", label: "Semester / Term", select: "semNumberFilter" },
     { id: "course", label: "Course", select: "courseFilter", searchable: true },
     { id: "faculty", label: "Faculty", faculty: true, searchable: true },
+    { id: "venue", label: "Venue", select: "venueFilter", searchable: true },
     { id: "facultyStatus", label: "Faculty Type", select: "facultyStatusFilter" },
 ];
 
@@ -508,6 +546,15 @@ function updateFilterCountBadge() {
 }
 
 
+function refreshVenueOptions() {
+    const filters = getCurrentFilterValues();
+    const items = RAW_TIMETABLE_DATA.filter(d => itemMatchesFilters(d, filters, ["venue"]));
+    const venues = [...new Set(items.flatMap(d => d.sessions.map(s => sessionVenue(d, s))))]
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+    populateSelect(document.getElementById("venueFilter"), venues, "All Venues");
+}
+
 function refreshCourseOptions() {
     const filters = getCurrentFilterValues();
     const items = RAW_TIMETABLE_DATA.filter(d => itemMatchesFilters(d, filters, ["course"]));
@@ -585,12 +632,14 @@ function setupEventListeners() {
     // Filter Change Listeners
     document.getElementById("courseFilter").addEventListener("change", () => {
         renderRailCategories();
+        refreshVenueOptions();
         refreshSemNumberOptions();
         refreshFacultyOptions();
         renderGrid();
     });
     document.getElementById("courseTypeFilter").addEventListener("change", () => {
         renderRailCategories();
+        refreshVenueOptions();
         refreshSemNumberOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
@@ -598,11 +647,21 @@ function setupEventListeners() {
     });
     document.getElementById("semNumberFilter").addEventListener("change", () => {
         renderRailCategories();
+        refreshVenueOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
         renderGrid();
     });
     document.getElementById("facultyStatusFilter").addEventListener("change", () => {
+        renderRailCategories();
+        refreshVenueOptions();
+        refreshSemNumberOptions();
+        refreshFacultyOptions();
+        refreshCourseOptions();
+        renderGrid();
+    });
+
+    document.getElementById("venueFilter").addEventListener("change", () => {
         renderRailCategories();
         refreshSemNumberOptions();
         refreshFacultyOptions();
@@ -617,16 +676,20 @@ function setupEventListeners() {
 function resetFilters() {
     document.getElementById("courseTypeFilter").value = "all";
     document.getElementById("semNumberFilter").value = "all";
+    document.getElementById("venueFilter").value = "all";
     selectedFaculty.clear();
     categorySearch.faculty = "";
     categorySearch.course = "";
+    categorySearch.venue = "";
     document.getElementById("courseFilter").value = "all";
     document.getElementById("facultyStatusFilter").value = "all";
     refreshSemNumberOptions();
     refreshFacultyOptions();
     refreshCourseOptions();
+    refreshVenueOptions();
     renderGrid();
-    renderRail();
+    renderRailCategories();
+    syncRailInputs();
 }
 
 function changeWeek(days) {
@@ -644,6 +707,7 @@ function renderGrid() {
 
     // Get Filter Values
     const selectedCourse = document.getElementById("courseFilter").value;
+    const selectedVenue = document.getElementById("venueFilter").value;
     const selectedCourseType = document.getElementById("courseTypeFilter").value;
     const selectedSemNumber = document.getElementById("semNumberFilter").value;
     const selectedStatus = document.getElementById("facultyStatusFilter").value;
@@ -677,6 +741,7 @@ function renderGrid() {
         // Apply Dropdown Filters (these apply to the whole course-section)
         if (selectedFaculty.size && !getFacultyNames(item).some(n => selectedFaculty.has(n))) return;
         if (selectedCourse !== "all" && item.code !== selectedCourse) return;
+        if (selectedVenue !== "all" && !item.sessions.some(s => sessionVenue(item, s) === selectedVenue)) return;
         if (selectedCourseType !== "all" && item.courseType !== selectedCourseType) return;
         if (selectedSemNumber === "term1") {
             if (item.courseType !== "term") return;
@@ -695,6 +760,7 @@ function renderGrid() {
         item.sessions.forEach(session => {
             // Skip if this weekday is a holiday this week
             if (holidayByDay[session.day]) return;
+            if (selectedVenue !== "all" && sessionVenue(item, session) !== selectedVenue) return;
 
             session.timeSlots.forEach(timeSlot => {
                 const cell = document.querySelector(`tr[data-time="${timeSlot}"] td[data-day="${session.day}"]`);
@@ -805,9 +871,11 @@ function renderAgenda(visible, holidayByDay) {
 
     wrap.innerHTML = GRID_SLOTS.map(slot => {
         const here = [];
+        const venueFilter = document.getElementById("venueFilter").value;
         visible.forEach(item => item.sessions.forEach(session => {
             if (session.day !== activeDay) return;
             if (!session.timeSlots.includes(slot)) return;
+            if (venueFilter !== "all" && sessionVenue(item, session) !== venueFilter) return;
             here.push({ item, session });
         }));
 
