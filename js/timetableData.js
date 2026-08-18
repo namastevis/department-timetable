@@ -516,7 +516,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "full-time",
     "sectionId": "UGSEM3",
     "sectionLabel": null,
-    "venue": "Preview Theater (Kabir)",
+    "venue": "Kabir (Preview Theater)",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -526,7 +526,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Preview Theater (Kabir)"
+        "venue": "Kabir (Preview Theater)"
       },
       {
         "day": "Wed",
@@ -535,7 +535,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Preview Theater (Kabir)"
+        "venue": "Kabir (Preview Theater)"
       }
     ]
   },
@@ -1033,7 +1033,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "full-time",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
-    "venue": "Preview Theater (Kabir)",
+    "venue": "Kabir (Preview Theater)",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1043,7 +1043,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Preview Theater (Kabir)"
+        "venue": "Kabir (Preview Theater)"
       },
       {
         "day": "Fri",
@@ -1052,7 +1052,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Preview Theater (Kabir)"
+        "venue": "Kabir (Preview Theater)"
       }
     ]
   },
@@ -1931,7 +1931,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "full-time",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
-    "venue": "Preview Theater (Kabir)",
+    "venue": "Kabir (Preview Theater)",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1941,7 +1941,7 @@ const RAW_TIMETABLE_DATA = [
           "10:00",
           "11:00"
         ],
-        "venue": "Preview Theater (Kabir)"
+        "venue": "Kabir (Preview Theater)"
       },
       {
         "day": "Thu",
@@ -1949,7 +1949,7 @@ const RAW_TIMETABLE_DATA = [
           "10:00",
           "11:00"
         ],
-        "venue": "Preview Theater (Kabir)"
+        "venue": "Kabir (Preview Theater)"
       }
     ]
   },

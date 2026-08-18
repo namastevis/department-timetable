@@ -137,10 +137,11 @@ body {
    category's options, collapsing to give the grid full width
    ============================================================ */
 
-/* Only appears when a filter change moved the week for you, so the view
-   changing under your hands is explained rather than mysterious. */
+/* Only appears when the current week has nothing to show, pointing at the week
+   that does. Breathing room on both sides so it reads as its own line rather
+   than as a lid stuck to the toolbar or the grid. */
 .week-jump-notice {
-    margin-bottom: 0.75rem;
+    margin: 0.6rem 0 0.9rem;
     padding: 0.5rem 0.75rem;
     border-radius: 5px;
     font-size: 0.82rem;

@@ -694,17 +694,17 @@ function resetFilters() {
 }
 
 // ============================================================
-// Jump-to-first-match
+// Empty-week notice
 //
 // Filtering to something that doesn't run this week leaves a blank grid with
 // no clue that the course exists at all — DESG218 only starts on 12 Oct, and
-// ARB 202 is used by exactly one section for five weeks. So when a FILTER
-// changes and the current week has nothing, the view moves to the first week
-// in the term that does.
+// ARB 202 is used by exactly one section for five weeks.
 //
-// Deliberately only on filter changes, never on week navigation: if it ran on
-// every render, pressing "Next Week" into a quiet week would bounce you
-// straight back, and the arrows would appear broken.
+// The view deliberately does NOT move. Moving the week out from under someone
+// who only changed a filter is disorienting, and it fights the week arrows.
+// Instead the banner says where the next occurrence is and lets them decide.
+// It is recomputed on every render, so paging into another empty week updates
+// the message rather than leaving a stale one.
 // ============================================================
 
 function weekHasMatches(monday) {
@@ -717,54 +717,75 @@ function weekHasMatches(monday) {
     });
 }
 
-function jumpToFirstMatchingWeek() {
-    if (weekHasMatches(currentMonday)) return false;
-
-    const terms = (typeof TERMS !== "undefined" ? TERMS : []);
-    if (!terms.length) return false;
-    const first = getMondayOf(parseLocalDate(terms[0].startDate));
-    const last = parseLocalDate(terms[terms.length - 1].endDate);
-
-    // Look forward from where you are, then wrap to the start of the term so a
-    // match earlier in the year is still found rather than reported as none.
-    const scan = (from) => {
-        const cursor = new Date(from);
-        while (cursor <= last) {
-            if (weekHasMatches(cursor)) return new Date(cursor);
-            cursor.setDate(cursor.getDate() + 7);
-        }
-        return null;
-    };
-
-    const target = scan(currentMonday) || scan(first);
-    if (!target || target.getTime() === currentMonday.getTime()) return false;
-    currentMonday = target;
-    return true;
-}
-
-// Every filter change goes through here so the jump rule is applied once, in
-// one place, rather than being repeated in each control's listener.
-function applyFilters() {
-    const jumped = jumpToFirstMatchingWeek();
-    renderGrid();
-    updateWeekJumpNotice(jumped);
-}
-
-function updateWeekJumpNotice(jumped) {
-    const el = document.getElementById("weekJumpNotice");
-    if (!el) return;
-    if (!jumped) { el.hidden = true; return; }
-    const friday = new Date(currentMonday);
+// Same wording as the toolbar heading, so "Week of Oct 26 – Oct 30, 2026" in
+// the banner is recognisably the thing the arrows will take you to.
+function weekLabel(monday) {
+    const friday = new Date(monday);
     friday.setDate(friday.getDate() + 4);
     const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return `Week of ${fmt(monday)} – ${fmt(friday)}, ${monday.getFullYear()}`;
+}
+
+// Walk week by week in `step` direction looking for one that has matches.
+function scanWeeks(from, step) {
+    const terms = (typeof TERMS !== "undefined" ? TERMS : []);
+    if (!terms.length) return null;
+    const first = getMondayOf(parseLocalDate(terms[0].startDate));
+    const last = getMondayOf(parseLocalDate(terms[terms.length - 1].endDate));
+
+    // Clamp the starting point into the term. Without this, paging past the end
+    // of the term and then scanning backwards would start outside the range,
+    // fail the loop guard immediately, and wrongly report "never scheduled".
+    let cursor = new Date(from);
+    if (step > 0 && cursor < first) cursor = new Date(first);
+    if (step < 0 && cursor > last) cursor = new Date(last);
+
+    while (cursor >= first && cursor <= last) {
+        if (weekHasMatches(cursor)) return new Date(cursor);
+        cursor.setDate(cursor.getDate() + step * 7);
+    }
+    return null;
+}
+
+function applyFilters() {
+    renderGrid();
+}
+
+function updateWeekJumpNotice() {
+    const el = document.getElementById("weekJumpNotice");
+    if (!el) return;
+    if (weekHasMatches(currentMonday)) { el.hidden = true; return; }
+
+    // Name the thing that came up empty when it is a single room, since that is
+    // the filter this most often happens with.
+    const venueSel = document.getElementById("venueFilter");
+    const isVenue = venueSel && venueSel.value !== "all";
+    const subject = isVenue ? "this venue" : "a match";
+
+    const ahead = new Date(currentMonday);
+    ahead.setDate(ahead.getDate() + 7);
+    const next = scanWeeks(ahead, 1);
+
+    if (next) {
+        el.hidden = false;
+        el.textContent = `Nothing matched this week — next ${subject} appears is in the ${weekLabel(next)}`;
+        return;
+    }
+
+    // Nothing ahead: it may still have run earlier in the term, which is more
+    // useful to say than "never".
+    const behind = new Date(currentMonday);
+    behind.setDate(behind.getDate() - 7);
+    const prev = scanWeeks(behind, -1);
     el.hidden = false;
-    el.textContent = `Nothing matched that week — showing ${fmt(currentMonday)} – ${fmt(friday)}, the first week this appears.`;
+    el.textContent = prev
+        ? `Nothing matched this week — ${isVenue ? "this venue was last used" : "the last match was"} in the ${weekLabel(prev)}`
+        : `Nothing matched this week — ${isVenue ? "this venue is" : "these filters are"} not scheduled at any point this term.`;
 }
 
 function changeWeek(days) {
     currentMonday.setDate(currentMonday.getDate() + days);
     renderGrid();
-    updateWeekJumpNotice(false);
 }
 
 function getHolidayForDate(dateStr) {
@@ -898,6 +919,11 @@ function renderGrid() {
     });
 
     renderAgenda(visible, holidayByDay);
+
+    // Recomputed on every render — filter change and week navigation alike — so
+    // paging into another empty week refreshes the message instead of leaving
+    // a stale one on screen.
+    updateWeekJumpNotice();
 }
 
 // ============================================================
@@ -983,8 +1009,10 @@ function updateHeaderDates() {
 
     const formatDate = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
+    // Year read from the date, not hardcoded — paging past 31 Dec used to keep
+    // saying 2026.
     document.getElementById("currentWeekDisplay").textContent =
-        `Week of ${formatDate(currentMonday)} – ${formatDate(friday)}, 2026`;
+        `Week of ${formatDate(currentMonday)} – ${formatDate(friday)}, ${friday.getFullYear()}`;
 
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
     days.forEach((day, idx) => {
