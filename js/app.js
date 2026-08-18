@@ -360,10 +360,21 @@ function renderGrid() {
                         ? `<span class="badge badge-section">Sec ${item.sectionLabel}</span>`
                         : "";
 
+                    // Venue is per-session: a section can meet in different
+                    // rooms on different days (e.g. DESG215 Sec A is in ARB002
+                    // on Mon/Wed but ARB104 on Tue). item.venue is the single
+                    // room when every session shares one, and null otherwise,
+                    // so session.venue is the value to trust here.
+                    const venue = session.venue || item.venue;
+                    const venueLine = venue
+                        ? `<div class="details venue">📍 ${venue}</div>`
+                        : "";
+
                     card.innerHTML = `
                         <div class="code">${item.code} ${sectionBadge}</div>
                         <div class="title">${item.title}</div>
                         <div class="details">👤 ${item.faculty}</div>
+                        ${venueLine}
                     `;
                     cell.appendChild(card);
                 }
