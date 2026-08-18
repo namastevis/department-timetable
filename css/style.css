@@ -551,7 +551,27 @@ th {
     cursor: pointer;
 }
 
-.course-card:hover {
+/* A meeting of a filtered-in course that happens in a DIFFERENT room. Shown so
+   the course reads as one thing across the week, faded and inert so it cannot
+   be mistaken for something happening in the room you filtered by. */
+.course-card.is-ghost {
+    opacity: 0.4;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.035),
+        rgba(0, 0, 0, 0.035) 5px,
+        transparent 5px,
+        transparent 10px
+    );
+    cursor: default;
+    box-shadow: none;
+}
+
+.course-card.is-ghost:hover {
+    box-shadow: none;
+}
+
+.course-card:not(.is-ghost):hover {
     box-shadow: 0 2px 6px rgba(0,0,0,0.16);
 }
 

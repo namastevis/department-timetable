@@ -22,8 +22,11 @@
 //   - Prof. Saraang Gangoo is now spelt "Prof. Sarang Ganoo" per the new sheet.
 //   - PGPE426 (PGPETERM1, batch PGPEI2026) is new: treated as a Term course and
 //     tagged with program: "PGPE" so it can be styled/filtered separately.
-//   - Venue spelling normalised: "Shanti Niketan Dance Studio" -> "Shantiniketan
-//     Dance Studio", matching "Shantiniketan Seminar Room" already in the sheet.
+//   - Venue names normalised: "Shanti Niketan Dance Studio" -> "Shantiniketan
+//     Dance Studio"; room codes spaced ("APJ103" -> "APJ 103"); "Arjuna
+//     Seminar Room" -> "Arjuna Seminar Room 001" (same room); the word "Wing"
+//     dropped ("Chandragupa East Wing" -> "Chandragupa East"); and
+//     "Learning Commons A&B" merged into "Learning Commons A & B".
 //   - Sem-5 DESG361 is now DESG362; THEA310 is 3 credits (was 4); the duplicate
 //     UGSEM7B DESG381 row is gone; DANC105 moved to section UGTERM1A.
 const RAW_TIMETABLE_DATA = [
@@ -50,7 +53,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "ARB002"
+        "venue": "ARB 002"
       },
       {
         "day": "Tue",
@@ -60,7 +63,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "ARB104"
+        "venue": "ARB 104"
       },
       {
         "day": "Wed",
@@ -70,7 +73,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "ARB002"
+        "venue": "ARB 002"
       }
     ]
   },
@@ -97,7 +100,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "Arjuna Seminar Room"
+        "venue": "Arjuna Seminar Room 001"
       },
       {
         "day": "Tue",
@@ -107,7 +110,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "ARB002"
+        "venue": "ARB 002"
       },
       {
         "day": "Wed",
@@ -117,7 +120,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "Arjuna Seminar Room"
+        "venue": "Arjuna Seminar Room 001"
       }
     ]
   },
@@ -144,7 +147,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "Arjuna Seminar Room"
+        "venue": "Arjuna Seminar Room 001"
       },
       {
         "day": "Tue",
@@ -154,7 +157,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "ARB002"
+        "venue": "ARB 002"
       },
       {
         "day": "Wed",
@@ -164,7 +167,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "Arjuna Seminar Room"
+        "venue": "Arjuna Seminar Room 001"
       }
     ]
   },
@@ -294,7 +297,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "full-time",
     "sectionId": "UGSEM3",
     "sectionLabel": null,
-    "venue": "APJ104",
+    "venue": "APJ 104",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -305,7 +308,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "APJ104"
+        "venue": "APJ 104"
       }
     ]
   },
@@ -320,7 +323,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "full-time",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
-    "venue": "APJ103",
+    "venue": "APJ 103",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -332,7 +335,7 @@ const RAW_TIMETABLE_DATA = [
           "16:15",
           "17:15"
         ],
-        "venue": "APJ103"
+        "venue": "APJ 103"
       }
     ]
   },
@@ -347,7 +350,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "full-time",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
-    "venue": "ARB001",
+    "venue": "ARB 001",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -357,7 +360,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "ARB001"
+        "venue": "ARB 001"
       },
       {
         "day": "Fri",
@@ -365,7 +368,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "ARB001"
+        "venue": "ARB 001"
       }
     ]
   },
@@ -882,7 +885,7 @@ const RAW_TIMETABLE_DATA = [
           "11:00",
           "12:00"
         ],
-        "venue": "RNJ002"
+        "venue": "RNJ 002"
       }
     ]
   },
@@ -1133,7 +1136,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Learning Commons A&B"
+        "venue": "Learning Commons A & B"
       },
       {
         "day": "Thu",
@@ -1141,7 +1144,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "ARB002"
+        "venue": "ARB 002"
       }
     ]
   },
@@ -1189,7 +1192,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
-    "venue": "ARB103",
+    "venue": "ARB 103",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1200,7 +1203,7 @@ const RAW_TIMETABLE_DATA = [
           "15:15",
           "16:15"
         ],
-        "venue": "ARB103"
+        "venue": "ARB 103"
       }
     ]
   },
@@ -1215,7 +1218,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "full-time",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
-    "venue": "APJ103",
+    "venue": "APJ 103",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1225,7 +1228,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "APJ103"
+        "venue": "APJ 103"
       },
       {
         "day": "Wed",
@@ -1233,7 +1236,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "APJ103"
+        "venue": "APJ 103"
       }
     ]
   },
@@ -1258,7 +1261,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "ARB202"
+        "venue": "ARB 202"
       },
       {
         "day": "Tue",
@@ -1290,7 +1293,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "ARB202"
+        "venue": "ARB 202"
       }
     ]
   },
@@ -1323,7 +1326,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "ARB104"
+        "venue": "ARB 104"
       },
       {
         "day": "Wed",
@@ -1429,7 +1432,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "full-time",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
-    "venue": "Focus Room 201 Chandragupta West Wing",
+    "venue": "Focus Room 201 Chandragupta West",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1438,7 +1441,7 @@ const RAW_TIMETABLE_DATA = [
         "timeSlots": [
           "14:15"
         ],
-        "venue": "Focus Room 201 Chandragupta West Wing"
+        "venue": "Focus Room 201 Chandragupta West"
       },
       {
         "day": "Fri",
@@ -1446,7 +1449,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Focus Room 201 Chandragupta West Wing"
+        "venue": "Focus Room 201 Chandragupta West"
       }
     ]
   },
@@ -1504,7 +1507,7 @@ const RAW_TIMETABLE_DATA = [
           "12:00",
           "13:00"
         ],
-        "venue": "ARB002"
+        "venue": "ARB 002"
       },
       {
         "day": "Thu",
@@ -1512,7 +1515,7 @@ const RAW_TIMETABLE_DATA = [
           "12:00",
           "13:00"
         ],
-        "venue": "APJ103"
+        "venue": "APJ 103"
       }
     ]
   },
@@ -1607,7 +1610,7 @@ const RAW_TIMETABLE_DATA = [
           "12:00",
           "13:00"
         ],
-        "venue": "BHC001"
+        "venue": "BHC 001"
       },
       {
         "day": "Fri",
@@ -1615,7 +1618,7 @@ const RAW_TIMETABLE_DATA = [
           "12:00",
           "13:00"
         ],
-        "venue": "ARB002"
+        "venue": "ARB 002"
       }
     ]
   },
@@ -1795,7 +1798,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "PGPETERM1",
     "sectionLabel": null,
-    "venue": "Chandragupa East Wing - Conference Room 001",
+    "venue": "Chandragupa East - Conference Room 001",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1805,7 +1808,7 @@ const RAW_TIMETABLE_DATA = [
           "10:00",
           "11:00"
         ],
-        "venue": "Chandragupa East Wing - Conference Room 001"
+        "venue": "Chandragupa East - Conference Room 001"
       },
       {
         "day": "Wed",
@@ -1813,7 +1816,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Chandragupa East Wing - Conference Room 001"
+        "venue": "Chandragupa East - Conference Room 001"
       }
     ],
     "program": "PGPE"

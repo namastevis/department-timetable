@@ -45,10 +45,6 @@ const VENUE_SHORTENINGS = [
     [/\bComputer Lab\b/i, "Lab"],
     [/\bDance Studio\b/i, "Dance"],
     [/\bPreview Theater\b/i, "Preview"],
-    // "East Wing" / "West Wing" — the wing letter is what identifies the
-    // building side; "Wing" itself carries nothing.
-    [/\bEast Wing\b/i, "East"],
-    [/\bWest Wing\b/i, "West"],
 ];
 
 function shortVenue(venue) {
@@ -356,8 +352,8 @@ const RAIL_CATEGORIES = [
     { id: "semNumber", label: "Semester / Term", select: "semNumberFilter" },
     { id: "course", label: "Course", select: "courseFilter", searchable: true },
     { id: "faculty", label: "Faculty", faculty: true, searchable: true },
-    { id: "venue", label: "Venue", select: "venueFilter", searchable: true },
     { id: "facultyStatus", label: "Faculty Type", select: "facultyStatusFilter" },
+    { id: "venue", label: "Venue", select: "venueFilter", searchable: true },
 ];
 
 let activeCategory = "courseType";
@@ -760,13 +756,19 @@ function renderGrid() {
         item.sessions.forEach(session => {
             // Skip if this weekday is a holiday this week
             if (holidayByDay[session.day]) return;
-            if (selectedVenue !== "all" && sessionVenue(item, session) !== selectedVenue) return;
+
+            // With a room filter on, this section's OTHER meetings still get
+            // drawn, faded and non-interactive, so a course stays visually
+            // whole across the week: you can see that DESG215 Sec A also meets
+            // on Tuesday, and that it is elsewhere, without that Tuesday card
+            // pretending to belong to the room you filtered by.
+            const isGhost = selectedVenue !== "all" && sessionVenue(item, session) !== selectedVenue;
 
             session.timeSlots.forEach(timeSlot => {
                 const cell = document.querySelector(`tr[data-time="${timeSlot}"] td[data-day="${session.day}"]`);
                 if (cell) {
                     const card = document.createElement("div");
-                    card.className = `course-card ${item.courseType}`;
+                    card.className = `course-card ${item.courseType}${isGhost ? " is-ghost" : ""}`;
 
                     // Two lines: the course NAME first (what a reader actually
                     // scans for — the code is registrar language and lives in
@@ -787,8 +789,8 @@ function renderGrid() {
                         .filter(Boolean)
                         .join(" · ");
 
-                    card.tabIndex = 0;
-                    card.setAttribute("role", "button");
+                    card.tabIndex = isGhost ? -1 : 0;
+                    if (!isGhost) card.setAttribute("role", "button");
                     card.dataset.code = item.code;
                     card.dataset.sectionId = item.sectionId;
                     card.dataset.day = session.day;
@@ -875,25 +877,26 @@ function renderAgenda(visible, holidayByDay) {
         visible.forEach(item => item.sessions.forEach(session => {
             if (session.day !== activeDay) return;
             if (!session.timeSlots.includes(slot)) return;
-            if (venueFilter !== "all" && sessionVenue(item, session) !== venueFilter) return;
-            here.push({ item, session });
+            const ghost = venueFilter !== "all" && sessionVenue(item, session) !== venueFilter;
+            here.push({ item, session, ghost });
         }));
 
         const [from, to] = (SLOT_LABELS[slot] || slot).split(" - ");
         return `<div class="agenda-slot">
             <div class="agenda-time">${from}<em>${to || ""}</em></div>
-            <div class="agenda-body">${here.map(({ item, session }) => agendaCard(item, session)).join("")}</div>
+            <div class="agenda-body">${here.map(({ item, session, ghost }) => agendaCard(item, session, ghost)).join("")}</div>
         </div>`;
     }).join("");
 }
 
 // Same markup as a grid card, so the delegated click handler and the detail
 // panel work here with no extra code.
-function agendaCard(item, session) {
+function agendaCard(item, session, ghost) {
     const venue = session.venue || item.venue || "";
     const badge = item.sectionLabel ? `<span class="badge badge-section">${item.sectionLabel}</span>` : "";
     const meta = [displayFaculty(item.faculty), shortVenue(venue)].filter(Boolean).join(" · ");
-    return `<div class="course-card ${item.courseType}" role="button" tabindex="0"
+    return `<div class="course-card ${item.courseType}${ghost ? " is-ghost" : ""}"
+                 ${ghost ? 'tabindex="-1"' : 'role="button" tabindex="0"'}
                  data-code="${item.code}" data-section-id="${item.sectionId}" data-day="${session.day}">
         <div class="title"><span class="course-name">${item.title}</span>${badge}</div>
         <div class="meta">${meta}</div>
@@ -1068,6 +1071,7 @@ function initDetailPanel() {
     if (!targets.length) return;
 
     const openFromCard = (card) => {
+        if (card.classList.contains("is-ghost")) return;
         const item = RAW_TIMETABLE_DATA.find(
             d => d.code === card.dataset.code && d.sectionId === card.dataset.sectionId
         );
