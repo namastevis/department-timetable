@@ -137,6 +137,23 @@ body {
    category's options, collapsing to give the grid full width
    ============================================================ */
 
+/* Only appears when a filter change moved the week for you, so the view
+   changing under your hands is explained rather than mysterious. */
+.week-jump-notice {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 5px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e0;
+}
+
+.week-jump-notice[hidden] {
+    display: none;
+}
+
 .workspace {
     display: flex;
     align-items: flex-start;
@@ -555,7 +572,7 @@ th {
    the course reads as one thing across the week, faded and inert so it cannot
    be mistaken for something happening in the room you filtered by. */
 .course-card.is-ghost {
-    opacity: 0.4;
+    opacity: 0.45;
     background-image: repeating-linear-gradient(
         45deg,
         rgba(0, 0, 0, 0.035),
@@ -563,12 +580,13 @@ th {
         transparent 5px,
         transparent 10px
     );
-    cursor: default;
     box-shadow: none;
 }
 
+/* Still clickable, so it still responds to a pointer. */
 .course-card.is-ghost:hover {
-    box-shadow: none;
+    opacity: 0.75;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.14);
 }
 
 .course-card:not(.is-ghost):hover {

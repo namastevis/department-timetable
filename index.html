@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Faculty of Design, Art & Performance | Department Timetable, AY 2026-27</title>
-    <link rel="stylesheet" href="css/style.css?v=10" />
+    <link rel="stylesheet" href="css/style.css?v=13" />
   </head>
   <!-- ?v=N on the CSS and JS: GitHub Pages caches these filenames hard, so a
        push can leave people staring at the previous build until they force a
@@ -84,6 +84,8 @@
              thing a 390px screen cannot do, so it does one day properly
              instead. Both views are rendered from the same data by renderGrid. -->
         <div class="day-tabs" id="dayTabs" role="tablist" aria-label="Day"></div>
+
+        <p id="weekJumpNotice" class="week-jump-notice" hidden></p>
 
         <section class="grid-card">
           <div class="agenda-view" id="agendaView"></div>
@@ -188,7 +190,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/timetableData.js?v=10"></script>
-    <script src="js/app.js?v=10"></script>
+    <script src="js/timetableData.js?v=13"></script>
+    <script src="js/app.js?v=13"></script>
   </body>
 </html>

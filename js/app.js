@@ -333,7 +333,7 @@ function setFacultySelection(names) {
     refreshVenueOptions();
     syncRailInputs();
     updateFacultyLabel();
-    renderGrid();
+    applyFilters();
 }
 
 // ============================================================
@@ -628,41 +628,46 @@ function setupEventListeners() {
     // Filter Change Listeners
     document.getElementById("courseFilter").addEventListener("change", () => {
         renderRailCategories();
+
         refreshVenueOptions();
         refreshSemNumberOptions();
         refreshFacultyOptions();
-        renderGrid();
+        applyFilters();
     });
     document.getElementById("courseTypeFilter").addEventListener("change", () => {
         renderRailCategories();
+
         refreshVenueOptions();
         refreshSemNumberOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
-        renderGrid();
+        applyFilters();
     });
     document.getElementById("semNumberFilter").addEventListener("change", () => {
         renderRailCategories();
+
         refreshVenueOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
-        renderGrid();
+        applyFilters();
     });
     document.getElementById("facultyStatusFilter").addEventListener("change", () => {
         renderRailCategories();
+
         refreshVenueOptions();
         refreshSemNumberOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
-        renderGrid();
+        applyFilters();
     });
 
     document.getElementById("venueFilter").addEventListener("change", () => {
         renderRailCategories();
+
         refreshSemNumberOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
-        renderGrid();
+        applyFilters();
     });
 
     document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
@@ -688,9 +693,78 @@ function resetFilters() {
     syncRailInputs();
 }
 
+// ============================================================
+// Jump-to-first-match
+//
+// Filtering to something that doesn't run this week leaves a blank grid with
+// no clue that the course exists at all — DESG218 only starts on 12 Oct, and
+// ARB 202 is used by exactly one section for five weeks. So when a FILTER
+// changes and the current week has nothing, the view moves to the first week
+// in the term that does.
+//
+// Deliberately only on filter changes, never on week navigation: if it ran on
+// every render, pressing "Next Week" into a quiet week would bounce you
+// straight back, and the arrows would appear broken.
+// ============================================================
+
+function weekHasMatches(monday) {
+    const friday = new Date(monday);
+    friday.setDate(friday.getDate() + 4);
+    const filters = getCurrentFilterValues();
+    return RAW_TIMETABLE_DATA.some(item => {
+        if (!itemMatchesFilters(item, filters)) return false;
+        return parseLocalDate(item.startDate) <= friday && parseLocalDate(item.endDate) >= monday;
+    });
+}
+
+function jumpToFirstMatchingWeek() {
+    if (weekHasMatches(currentMonday)) return false;
+
+    const terms = (typeof TERMS !== "undefined" ? TERMS : []);
+    if (!terms.length) return false;
+    const first = getMondayOf(parseLocalDate(terms[0].startDate));
+    const last = parseLocalDate(terms[terms.length - 1].endDate);
+
+    // Look forward from where you are, then wrap to the start of the term so a
+    // match earlier in the year is still found rather than reported as none.
+    const scan = (from) => {
+        const cursor = new Date(from);
+        while (cursor <= last) {
+            if (weekHasMatches(cursor)) return new Date(cursor);
+            cursor.setDate(cursor.getDate() + 7);
+        }
+        return null;
+    };
+
+    const target = scan(currentMonday) || scan(first);
+    if (!target || target.getTime() === currentMonday.getTime()) return false;
+    currentMonday = target;
+    return true;
+}
+
+// Every filter change goes through here so the jump rule is applied once, in
+// one place, rather than being repeated in each control's listener.
+function applyFilters() {
+    const jumped = jumpToFirstMatchingWeek();
+    renderGrid();
+    updateWeekJumpNotice(jumped);
+}
+
+function updateWeekJumpNotice(jumped) {
+    const el = document.getElementById("weekJumpNotice");
+    if (!el) return;
+    if (!jumped) { el.hidden = true; return; }
+    const friday = new Date(currentMonday);
+    friday.setDate(friday.getDate() + 4);
+    const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    el.hidden = false;
+    el.textContent = `Nothing matched that week — showing ${fmt(currentMonday)} – ${fmt(friday)}, the first week this appears.`;
+}
+
 function changeWeek(days) {
     currentMonday.setDate(currentMonday.getDate() + days);
     renderGrid();
+    updateWeekJumpNotice(false);
 }
 
 function getHolidayForDate(dateStr) {
@@ -758,10 +832,11 @@ function renderGrid() {
             if (holidayByDay[session.day]) return;
 
             // With a room filter on, this section's OTHER meetings still get
-            // drawn, faded and non-interactive, so a course stays visually
-            // whole across the week: you can see that DESG215 Sec A also meets
-            // on Tuesday, and that it is elsewhere, without that Tuesday card
-            // pretending to belong to the room you filtered by.
+            // drawn, faded, so a course stays visually whole across the week:
+            // you can see that DESG215 Sec A also meets on Tuesday, and that
+            // it is elsewhere, without that Tuesday card looking like it
+            // belongs to the room you filtered by. Still clickable — it is a
+            // real class, and its details are just as worth reading.
             const isGhost = selectedVenue !== "all" && sessionVenue(item, session) !== selectedVenue;
 
             session.timeSlots.forEach(timeSlot => {
@@ -789,8 +864,8 @@ function renderGrid() {
                         .filter(Boolean)
                         .join(" · ");
 
-                    card.tabIndex = isGhost ? -1 : 0;
-                    if (!isGhost) card.setAttribute("role", "button");
+                    card.tabIndex = 0;
+                    card.setAttribute("role", "button");
                     card.dataset.code = item.code;
                     card.dataset.sectionId = item.sectionId;
                     card.dataset.day = session.day;
@@ -895,8 +970,7 @@ function agendaCard(item, session, ghost) {
     const venue = session.venue || item.venue || "";
     const badge = item.sectionLabel ? `<span class="badge badge-section">${item.sectionLabel}</span>` : "";
     const meta = [displayFaculty(item.faculty), shortVenue(venue)].filter(Boolean).join(" · ");
-    return `<div class="course-card ${item.courseType}${ghost ? " is-ghost" : ""}"
-                 ${ghost ? 'tabindex="-1"' : 'role="button" tabindex="0"'}
+    return `<div class="course-card ${item.courseType}${ghost ? " is-ghost" : ""}" role="button" tabindex="0"
                  data-code="${item.code}" data-section-id="${item.sectionId}" data-day="${session.day}">
         <div class="title"><span class="course-name">${item.title}</span>${badge}</div>
         <div class="meta">${meta}</div>
@@ -1035,8 +1109,10 @@ function openDetail(item, session) {
         <div class="detail-code">${item.code}${item.sectionLabel ? ` &middot; Section ${item.sectionLabel}` : ""}</div>
         <h3 class="detail-title">${item.title}</h3>
         <div class="detail-badges">
-            <span class="badge badge-${item.facultyStatus}">${facultyTypeLabel(item.facultyStatus)}</span>
+            <!-- Cohort first: "Sem-7" is what identifies the class. The
+                 employment type qualifies who teaches it, so it follows. -->
             <span class="badge badge-${item.courseType}">${item.semTerm}</span>
+            <span class="badge badge-${item.facultyStatus}">${facultyTypeLabel(item.facultyStatus)}</span>
         </div>
         ${detailRow("Faculty", displayFaculty(item.faculty))}
         ${detailRow("Runs", `${prettyDate(item.startDate)} &rarr; ${prettyDate(item.endDate)}` +
@@ -1071,7 +1147,6 @@ function initDetailPanel() {
     if (!targets.length) return;
 
     const openFromCard = (card) => {
-        if (card.classList.contains("is-ghost")) return;
         const item = RAW_TIMETABLE_DATA.find(
             d => d.code === card.dataset.code && d.sectionId === card.dataset.sectionId
         );
