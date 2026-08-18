@@ -14,135 +14,75 @@
       </div>
     </header>
 
-    <main class="dashboard">
-      <!-- View toggle scrolls away normally; the filter panels below are
-           position:sticky. Note: they're kept as DIRECT children of
-           <main class="dashboard"> (not wrapped in a short intermediate
-           div) on purpose — a sticky element can only stay "stuck" while
-           scrolling through the vertical span of its own containing block
-           (nearest block-level ancestor). A short wrapper here would give
-           it almost no room to stick before being forced to scroll away
-           with that wrapper, which looked like "the filters don't stick,
-           they just scroll up and vanish". main.dashboard spans the whole
-           page's content, so the filters stay pinned for the full scroll. -->
-      <div class="view-toggle">
-        <button id="viewToggleTimetable" class="view-toggle-btn active" type="button">Timetable View</button>
-        <button id="viewToggleEmptySlot" class="view-toggle-btn" type="button">Find Empty Slot</button>
+    <!-- Slim toolbar: the filter rail's show/hide sits on the left the way
+         Titan Eye+ puts "Hide Filters" above its rail, week navigation in the
+         middle. Filters no longer occupy a permanent horizontal band, which is
+         what used to push the grid down the page. -->
+    <div class="toolbar">
+      <!-- One control, two shapes: a labelled Hide/Show Filters button on the
+           desktop rail, a hamburger on phones where the rail becomes a drawer. -->
+      <button id="toggleFiltersBtn" class="filters-toggle" type="button" aria-expanded="true" aria-controls="filterRail">
+        <span class="filters-burger" aria-hidden="true">&#9776;</span>
+        <span class="filters-toggle-icon" aria-hidden="true">&#8676;</span>
+        <span id="toggleFiltersLabel">Hide Filters</span>
+        <span id="filterCountBadge" class="filters-count" hidden></span>
+      </button>
+
+      <div class="week-controls">
+        <button id="prevWeekBtn" class="btn">&larr; Previous Week</button>
+        <h2 id="currentWeekDisplay">Loading dates...</h2>
+        <button id="nextWeekBtn" class="btn">Next Week &rarr;</button>
       </div>
 
-        <!-- Controls & Filters Section (Timetable view) -->
-        <section class="controls-card" id="timetableControls">
-          <!-- Week Navigation Controls -->
-          <div class="week-controls">
-            <button id="prevWeekBtn" class="btn">&larr; Previous Week</button>
-            <div class="week-info">
-              <h2 id="currentWeekDisplay">Loading dates...</h2>
-            </div>
-            <button id="nextWeekBtn" class="btn">Next Week &rarr;</button>
-            <button id="jumpToTodayBtn" class="btn btn-secondary">
-              Jump to Term Start
-            </button>
-          </div>
+      <button id="jumpToTodayBtn" class="btn btn-secondary">Jump to Term Start</button>
+    </div>
 
-          <!-- Filters -->
-          <div class="filters-row">
-            <div class="filters-grid">
-              <div class="filter-group">
-                <label for="courseTypeFilter">Course Types:</label>
-                <select id="courseTypeFilter">
-                  <option value="all">Semester &amp; Term</option>
-                  <option value="semester">Semester (Green)</option>
-                  <option value="term">Term (Blue)</option>
-                </select>
-              </div>
+    <!-- The five filters still exist as real form controls so every existing
+         filter behaviour (cross-linking, reset, option rebuilding) keeps
+         working unchanged. The rail is a view onto them: clicking an option in
+         the rail sets the control and fires its change event. They are hidden
+         visually, not with display:none, so they stay focusable by scripts. -->
+    <div class="visually-hidden" aria-hidden="true">
+      <select id="courseTypeFilter">
+        <option value="all">Semester &amp; Term</option>
+        <option value="semester">Semester (Green)</option>
+        <option value="term">Term (Blue)</option>
+      </select>
+      <select id="semNumberFilter"><option value="all">All Semesters &amp; Terms</option></select>
+      <select id="courseFilter"><option value="all">All Courses</option></select>
+      <select id="facultyStatusFilter">
+        <option value="all">All Faculty Types</option>
+        <option value="full-time">Full-time</option>
+        <option value="adjunct">Adjunct</option>
+        <option value="visiting">Visiting</option>
+      </select>
+    </div>
 
-              <div class="filter-group">
-                <label for="semNumberFilter">Semester/Term:</label>
-                <select id="semNumberFilter">
-                  <option value="all">All Semesters &amp; Terms</option>
-                  <!-- Options populated dynamically: Sem 3, 5, 7 -->
-                </select>
-              </div>
+    <div class="workspace" id="workspace">
+      <!-- Titan-style rail: a category column on the left, the selected
+           category's options beside it. -->
+      <aside class="filter-rail" id="filterRail">
+        <div class="rail-head">
+          <span class="rail-title">Filters</span>
+          <button type="button" id="resetFiltersBtn" class="link-btn">Reset all</button>
+        </div>
+        <div class="rail-body">
+          <div class="rail-cats" id="railCats" role="tablist" aria-label="Filter categories"></div>
+          <div class="rail-options" id="railOptions"></div>
+        </div>
+      </aside>
 
-              <div class="filter-group">
-                <label for="courseFilter">Course:</label>
-                <select id="courseFilter">
-                  <option value="all">All Courses</option>
-                  <!-- Options populated dynamically: shows all sections of the selected course -->
-                </select>
-              </div>
+      <main class="workspace-main">
+        <!-- Phones get a day at a time: tabs here, an agenda list below, and
+             the week grid hidden. Comparing five days side by side is the one
+             thing a 390px screen cannot do, so it does one day properly
+             instead. Both views are rendered from the same data by renderGrid. -->
+        <div class="day-tabs" id="dayTabs" role="tablist" aria-label="Day"></div>
 
-              <div class="filter-group">
-                <label for="facultyFilter">Faculty Member:</label>
-                <select id="facultyFilter">
-                  <option value="all">All Faculty</option>
-                  <!-- Options populated dynamically -->
-                </select>
-              </div>
-
-              <div class="filter-group">
-                <label for="facultyStatusFilter">Faculty Type:</label>
-                <select id="facultyStatusFilter">
-                  <option value="all">All Faculty Types</option>
-                  <option value="regular">Regular</option>
-                  <option value="visiting">Visiting</option>
-                </select>
-              </div>
-            </div>
-
-            <button
-              id="resetFiltersBtn"
-              class="reset-btn"
-              type="button"
-              title="Reset all filters"
-              aria-label="Reset all filters"
-            >
-              &#8635;
-            </button>
-          </div>
-        </section>
-
-        <!-- Controls & Filters Section (Find Empty Slot view) -->
-        <section class="controls-card" id="emptySlotControls" style="display: none">
-          <div class="empty-slot-filters">
-            <div class="filter-group">
-              <label for="emptyStartDate">From:</label>
-              <input type="date" id="emptyStartDate" />
-            </div>
-            <div class="filter-group">
-              <label for="emptyEndDate">To:</label>
-              <input type="date" id="emptyEndDate" />
-            </div>
-            <div class="filter-group checkbox-group">
-              <label>
-                <input type="checkbox" id="includeSaturdayCheckbox" />
-                Include Saturdays (1st &amp; 3rd off)
-              </label>
-            </div>
-          </div>
-
-          <div class="faculty-select-panel">
-            <div class="faculty-select-header">
-              <label>Faculty (select one or more):</label>
-              <div class="faculty-quick-actions">
-                <button type="button" id="selectAllFacultyBtn" class="link-btn">All</button>
-                <button type="button" id="selectRegularFacultyBtn" class="link-btn">Regular</button>
-                <button type="button" id="selectVisitingFacultyBtn" class="link-btn">Visiting</button>
-                <button type="button" id="clearFacultyBtn" class="link-btn">Clear</button>
-              </div>
-            </div>
-            <div id="facultyMultiSelect" class="faculty-multiselect"></div>
-          </div>
-
-          <button id="findEmptySlotsBtn" class="btn" type="button">Find Empty Slots</button>
-          <p id="emptySlotMessage" class="empty-slot-message" style="display: none"></p>
-        </section>
-
-      <!-- Timetable Grid -->
-      <div id="timetableGridSection">
-      <section class="grid-card">
-        <p class="swipe-hint">&larr; Swipe to see more days &rarr;</p>
-        <div class="table-responsive">
+        <section class="grid-card">
+          <p id="freeSlotHint" class="free-slot-hint" hidden></p>
+          <div class="agenda-view" id="agendaView"></div>
+          <div class="table-responsive">
           <table id="timetableGrid">
             <thead>
               <tr>
@@ -237,22 +177,10 @@
               </tr>
             </tbody>
           </table>
-        </div>
-      </section>
-      </div>
-
-      <!-- Find Empty Slot Grid -->
-      <div id="emptySlotGridSection" style="display: none">
-        <section class="grid-card">
-          <div class="table-responsive">
-            <table id="emptySlotGrid">
-              <thead id="emptySlotHead"></thead>
-              <tbody id="emptySlotBody"></tbody>
-            </table>
           </div>
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
 
     <!-- Scripts -->
     <script src="js/timetableData.js"></script>

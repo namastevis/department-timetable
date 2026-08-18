@@ -19,6 +19,43 @@ function formatLocalDate(date) {
     return `${y}-${m}-${d}`;
 }
 
+// ============================================================
+// Display helpers
+//
+// Faculty names are stored canonically in timetableData.js with the "Prof."
+// prefix ("Prof. Ketan Kulkarni"). That prefix is true of every single person
+// in the dataset, so it separates nobody from anybody and costs ~40px on every
+// card. It's stripped for DISPLAY only — the underlying values (which the
+// filters match on, and which appear in the printed source data) are untouched.
+// Co-taught sections keep both names: "Rujuta Soman / Vrushali Lele".
+// ============================================================
+
+function displayFaculty(name) {
+    if (!name) return "";
+    return name.split(" / ").map(n => n.replace(/^Prof\.\s*/, "").trim()).join(" / ");
+}
+
+// Room names in the source sheet spell out words that are obvious in context.
+// Shortening them is what lets faculty + venue share one line on the card.
+// The detail panel always shows the room's full name.
+const VENUE_SHORTENINGS = [
+    [/\bConference Room\b/i, "Conf"],
+    [/\bSeminar Room\b/i, "Seminar"],
+    [/\bFocus Room\b/i, "Focus"],
+    [/\bComputer Lab\b/i, "Lab"],
+    [/\bDance Studio\b/i, "Dance"],
+    [/\bPreview Theater\b/i, "Preview"],
+    // "East Wing" / "West Wing" — the wing letter is what identifies the
+    // building side; "Wing" itself carries nothing.
+    [/\bEast Wing\b/i, "East"],
+    [/\bWest Wing\b/i, "West"],
+];
+
+function shortVenue(venue) {
+    if (!venue) return "";
+    return VENUE_SHORTENINGS.reduce((v, [re, to]) => v.replace(re, to), venue).trim();
+}
+
 function getMondayOf(date) {
     const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const day = d.getDay(); // 0 = Sun, 1 = Mon, ...
@@ -34,18 +71,53 @@ document.addEventListener("DOMContentLoaded", () => {
     renderGrid();
     setupEventListeners();
     updateJumpButtonLabel();
-    initEmptySlotView();
+    initFilterRail();
+    initDetailPanel();
+    trackToolbarHeight();
+    initDayTabs();
 });
 
-// Note: the Timetable/Find-Empty-Slot toggle scrolling out of view while the
-// filter panel stays pinned is handled entirely in CSS (see .view-toggle and
-// .controls-card in style.css) rather than with a scroll listener. An
-// earlier JS-driven version toggled the toggle's height on scroll, which
-// shifted page layout mid-scroll and re-triggered the same scroll handler —
-// a feedback loop that showed up as jitter right as the header became
-// sticky. Letting the toggle be a normal (non-sticky) block that scrolls
-// away naturally, with only the filter panel itself sticky, avoids that
-// entirely.
+// The day-header row and the filter rail both pin themselves just below the
+// toolbar, so they need its real height — which changes when the toolbar wraps
+// onto two lines on a narrow window.
+function trackToolbarHeight() {
+    const toolbar = document.querySelector(".toolbar");
+    if (!toolbar) return;
+    const apply = () => document.documentElement.style.setProperty(
+        "--toolbar-h", `${Math.round(toolbar.getBoundingClientRect().height)}px`);
+    apply();
+    if (typeof ResizeObserver !== "undefined") new ResizeObserver(apply).observe(toolbar);
+    window.addEventListener("resize", apply);
+}
+
+// ============================================================
+// Faculty multi-select
+//
+// This replaces the old separate "Find Empty Slot" view. Selecting several
+// people here filters the grid to just their classes, which means the cells
+// left empty ARE the slots where all of them are free — the same answer the
+// old view gave, but in the grid people already read, and with the context of
+// what those people are doing either side of the gap.
+//
+// Selections are held here rather than read off the DOM, so they survive the
+// option list being rebuilt when another filter narrows it.
+// ============================================================
+
+const selectedFaculty = new Set();
+
+// The three faculty types, in the order they should appear everywhere.
+// facultyStatus in timetableData.js holds the key; FACULTY_TYPES holds the
+// label, so a rename never means hunting through markup and CSS again.
+const FACULTY_TYPES = [
+    { key: "full-time", label: "Full-time" },
+    { key: "adjunct", label: "Adjunct" },
+    { key: "visiting", label: "Visiting" },
+];
+
+function facultyTypeLabel(key) {
+    const t = FACULTY_TYPES.find(t => t.key === key);
+    return t ? t.label : key;
+}
 
 function initFilters() {
     // Course Types, Course, Faculty, and Semester/Term options are all
@@ -68,7 +140,7 @@ function getCurrentFilterValues() {
         courseType: document.getElementById("courseTypeFilter").value,
         semNumber: document.getElementById("semNumberFilter").value,
         course: document.getElementById("courseFilter").value,
-        faculty: document.getElementById("facultyFilter").value,
+        faculty: [...selectedFaculty],
         facultyStatus: document.getElementById("facultyStatusFilter").value,
     };
 }
@@ -90,14 +162,22 @@ function itemMatchesFilters(item, filters, skip = []) {
         }
     }
     if (!skip.includes("course") && filters.course !== "all" && item.code !== filters.course) return false;
-    if (!skip.includes("faculty") && filters.faculty !== "all" && item.faculty !== filters.faculty) return false;
+    // Faculty is multi-select: no selection means "everyone", otherwise the
+    // section matches if ANY selected person teaches it. Co-taught sections
+    // match on either name (see getFacultyNames).
+    if (!skip.includes("faculty") && filters.faculty.length) {
+        const names = getFacultyNames(item);
+        if (!names.some(n => filters.faculty.includes(n))) return false;
+    }
     if (!skip.includes("facultyStatus") && filters.facultyStatus !== "all" && item.facultyStatus !== filters.facultyStatus) return false;
     return true;
 }
 
 // Repopulates a <select>'s options, preserving the current selection if it's
 // still among the new options, otherwise resetting to "all".
-function populateSelect(selectEl, entries, allLabel) {
+// `labelFn` optionally renders a friendlier label than the option's value.
+// Never transform the value itself — filter matching depends on it.
+function populateSelect(selectEl, entries, allLabel, labelFn) {
     const currentValue = selectEl.value;
     selectEl.innerHTML = "";
 
@@ -114,7 +194,7 @@ function populateSelect(selectEl, entries, allLabel) {
             opt.textContent = `${code} — ${title}`;
         } else {
             opt.value = entry;
-            opt.textContent = entry;
+            opt.textContent = labelFn ? labelFn(entry) : entry;
         }
         selectEl.appendChild(opt);
     });
@@ -167,12 +247,266 @@ function refreshSemNumberOptions() {
     selectEl.value = stillValid ? currentValue : "all";
 }
 
+// Rebuilds the faculty checkbox list, grouped by faculty type. Anyone no
+// longer available under the other active filters is dropped from the
+// selection, mirroring how the other dropdowns fall back to "all" when their
+// value stops being valid.
 function refreshFacultyOptions() {
     const filters = getCurrentFilterValues();
     const items = RAW_TIMETABLE_DATA.filter(d => itemMatchesFilters(d, filters, ["faculty"]));
-    const faculty = [...new Set(items.map(d => d.faculty))].filter(Boolean).sort();
-    populateSelect(document.getElementById("facultyFilter"), faculty, "All Faculty");
+
+    const available = new Map(); // canonical name -> facultyStatus key
+    items.forEach(d => getFacultyNames(d).forEach(n => {
+        if (n) available.set(n, d.facultyStatus);
+    }));
+
+    [...selectedFaculty].forEach(n => {
+        if (!available.has(n)) selectedFaculty.delete(n);
+    });
+
+    const container = document.getElementById("facultyOptions");
+    if (!container) { updateFacultyLabel(); return; }   // Faculty category not open
+    const query = (categorySearch.faculty || "").trim().toLowerCase();
+
+    const group = ({ key, label }) => {
+        const names = [...available.entries()]
+            .filter(([n, st]) => st === key && displayFaculty(n).toLowerCase().includes(query))
+            .map(([n]) => n)
+            .sort((a, b) => displayFaculty(a).localeCompare(displayFaculty(b)));
+        if (!names.length) return "";
+        return `<div class="multiselect-group">
+            <div class="multiselect-group-title">${label}</div>
+            ${names.map(n => `<label class="multiselect-option">
+                <input type="checkbox" class="faculty-checkbox" value="${n}"
+                       data-status="${key}"${selectedFaculty.has(n) ? " checked" : ""} />
+                <span>${displayFaculty(n)}</span>
+            </label>`).join("")}
+        </div>`;
+    };
+
+    const html = FACULTY_TYPES.map(group).join("");
+    container.innerHTML = html || `<p class="multiselect-empty">No faculty match "${query}".</p>`;
+    updateFacultyLabel();
 }
+
+// The rail's category button carries the count instead of a dropdown label.
+function updateFacultyLabel() {
+    renderRailCategories();
+}
+
+function setFacultySelection(names) {
+    selectedFaculty.clear();
+    names.forEach(n => selectedFaculty.add(n));
+    refreshSemNumberOptions();
+    refreshCourseOptions();
+    refreshFacultyOptions();
+    renderGrid();
+}
+
+// ============================================================
+// Filter rail (Titan Eye+ pattern)
+//
+// A category column on the left, the selected category's options beside it,
+// and a Hide Filters toggle above. The five filters are still real <select>
+// elements in the DOM (visually hidden); the rail reads their options and
+// writes back to them, so cross-linking, reset and option rebuilding all keep
+// running through the code that already existed. Faculty is the exception —
+// it is multi-select and lives in `selectedFaculty`, not in a <select>.
+// ============================================================
+
+const RAIL_CATEGORIES = [
+    { id: "courseType", label: "Course Type", select: "courseTypeFilter" },
+    { id: "semNumber", label: "Semester / Term", select: "semNumberFilter" },
+    { id: "course", label: "Course", select: "courseFilter", searchable: true },
+    { id: "faculty", label: "Faculty", faculty: true, searchable: true },
+    { id: "facultyStatus", label: "Faculty Type", select: "facultyStatusFilter" },
+];
+
+let activeCategory = "courseType";
+const categorySearch = {};   // category id -> current search text
+
+function activeCountFor(cat) {
+    if (cat.faculty) return selectedFaculty.size;
+    const el = document.getElementById(cat.select);
+    return el && el.value !== "all" ? 1 : 0;
+}
+
+function renderRailCategories() {
+    const wrap = document.getElementById("railCats");
+    if (!wrap) return;
+    wrap.innerHTML = RAIL_CATEGORIES.map(cat => {
+        const n = activeCountFor(cat);
+        return `<button type="button" role="tab" class="rail-cat${cat.id === activeCategory ? " is-active" : ""}"
+                    data-cat="${cat.id}" aria-selected="${cat.id === activeCategory}">
+            <span>${cat.label}</span>
+            ${n ? `<span class="rail-count">${n}</span>` : ""}
+        </button>`;
+    }).join("");
+    updateFilterCountBadge();
+}
+
+// Single-choice categories render as a radio list, not a dropdown — every
+// option visible at once, which is the point of a rail.
+function renderSelectOptions(cat) {
+    const el = document.getElementById(cat.select);
+    const query = (categorySearch[cat.id] || "").toLowerCase();
+    const opts = [...el.options].filter(o => !query || o.textContent.toLowerCase().includes(query));
+    if (!opts.length) return `<p class="rail-empty">Nothing matches &ldquo;${categorySearch[cat.id]}&rdquo;.</p>`;
+    return `<div class="rail-list">${opts.map(o => `
+        <label class="rail-option${o.value === el.value ? " is-checked" : ""}">
+            <input type="radio" name="rail-${cat.id}" value="${o.value}"${o.value === el.value ? " checked" : ""} />
+            <span>${o.textContent}</span>
+        </label>`).join("")}</div>`;
+}
+
+function renderRailOptions() {
+    const wrap = document.getElementById("railOptions");
+    if (!wrap) return;
+    const cat = RAIL_CATEGORIES.find(c => c.id === activeCategory);
+    const search = cat.searchable
+        ? `<input type="search" class="rail-search" id="railSearch" placeholder="Search ${cat.label.toLowerCase()}"
+                  aria-label="Search ${cat.label}" value="${categorySearch[cat.id] || ""}" />`
+        : "";
+
+    if (cat.faculty) {
+        wrap.innerHTML = search + `
+            <div class="rail-actions">
+                <button type="button" id="selectAllFacultyBtn" class="link-btn">All</button>
+                <button type="button" id="selectFullTimeFacultyBtn" class="link-btn">Full-time</button>
+                <button type="button" id="selectAdjunctFacultyBtn" class="link-btn">Adjunct</button>
+                <button type="button" id="selectVisitingFacultyBtn" class="link-btn">Visiting</button>
+                <button type="button" id="clearFacultyBtn" class="link-btn">Clear</button>
+            </div>
+            <div id="facultyOptions" class="rail-list"></div>`;
+        wireFacultyActions();
+        refreshFacultyOptions();
+    } else {
+        wrap.innerHTML = search + renderSelectOptions(cat);
+    }
+
+    const searchEl = document.getElementById("railSearch");
+    if (searchEl) {
+        searchEl.addEventListener("input", () => {
+            categorySearch[cat.id] = searchEl.value;
+            const pos = searchEl.selectionStart;
+            renderRailOptions();
+            const again = document.getElementById("railSearch");
+            if (again) { again.focus(); again.setSelectionRange(pos, pos); }
+        });
+    }
+}
+
+function renderRail() {
+    renderRailCategories();
+    renderRailOptions();
+}
+
+function wireFacultyActions() {
+    const allNames = (status) => {
+        const names = new Set();
+        RAW_TIMETABLE_DATA.forEach(d => {
+            if (status && d.facultyStatus !== status) return;
+            getFacultyNames(d).forEach(n => n && names.add(n));
+        });
+        return [...names];
+    };
+    const bind = (id, status) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("click", () =>
+            setFacultySelection(status === "*" ? allNames() : status ? allNames(status) : []));
+    };
+    bind("selectAllFacultyBtn", "*");
+    bind("selectFullTimeFacultyBtn", "full-time");
+    bind("selectAdjunctFacultyBtn", "adjunct");
+    bind("selectVisitingFacultyBtn", "visiting");
+    bind("clearFacultyBtn", null);
+}
+
+function initFilterRail() {
+    renderRail();
+
+    document.getElementById("railCats").addEventListener("click", e => {
+        const btn = e.target.closest(".rail-cat");
+        if (!btn) return;
+        activeCategory = btn.dataset.cat;
+        renderRail();
+    });
+
+    // A radio choice writes straight back to the hidden <select> and fires its
+    // change event, so every filter listener that already existed still runs.
+    document.getElementById("railOptions").addEventListener("change", e => {
+        const radio = e.target.closest('input[type="radio"]');
+        if (radio) {
+            const cat = RAIL_CATEGORIES.find(c => `rail-${c.id}` === radio.name);
+            const el = document.getElementById(cat.select);
+            el.value = radio.value;
+            el.dispatchEvent(new Event("change"));
+            return;
+        }
+        const cb = e.target.closest(".faculty-checkbox");
+        if (cb) {
+            if (cb.checked) selectedFaculty.add(cb.value);
+            else selectedFaculty.delete(cb.value);
+            refreshSemNumberOptions();
+            refreshCourseOptions();
+            renderGrid();
+            renderRailCategories();
+        }
+    });
+
+    const railEl = document.getElementById("filterRail");
+    const toggle = document.getElementById("toggleFiltersBtn");
+    const label = document.getElementById("toggleFiltersLabel");
+    const workspace = document.getElementById("workspace");
+
+    // Two behaviours behind one button. On desktop it collapses a column and
+    // the grid widens. On a phone the rail is a drawer over the page, so it
+    // opens instead of closes — hence the inverted default and the scrim.
+    const isPhone = () => window.matchMedia("(max-width: 640px)").matches;
+
+    const scrim = document.createElement("div");
+    scrim.className = "rail-scrim";
+    scrim.hidden = true;
+    document.body.appendChild(scrim);
+
+    const setDrawer = (open) => {
+        document.body.classList.toggle("drawer-open", open);
+        scrim.hidden = !open;
+        toggle.setAttribute("aria-expanded", String(open));
+        railEl.setAttribute("aria-hidden", String(!open));
+    };
+
+    scrim.addEventListener("click", () => setDrawer(false));
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && document.body.classList.contains("drawer-open")) setDrawer(false);
+    });
+
+    toggle.addEventListener("click", () => {
+        if (isPhone()) {
+            setDrawer(!document.body.classList.contains("drawer-open"));
+            return;
+        }
+        const hidden = workspace.classList.toggle("rail-hidden");
+        toggle.setAttribute("aria-expanded", String(!hidden));
+        label.textContent = hidden ? "Show Filters" : "Hide Filters";
+        toggle.querySelector(".filters-toggle-icon").innerHTML = hidden ? "&#8677;" : "&#8676;";
+        railEl.setAttribute("aria-hidden", String(hidden));
+    });
+
+    // Leaving phone width with the drawer open would strand it half-styled.
+    window.addEventListener("resize", () => { if (!isPhone()) setDrawer(false); });
+}
+
+// The hamburger carries a count so an active filter is visible without
+// opening the drawer.
+function updateFilterCountBadge() {
+    const badge = document.getElementById("filterCountBadge");
+    if (!badge) return;
+    const n = RAIL_CATEGORIES.reduce((sum, cat) => sum + (activeCountFor(cat) ? 1 : 0), 0);
+    badge.hidden = n === 0;
+    badge.textContent = n;
+}
+
 
 function refreshCourseOptions() {
     const filters = getCurrentFilterValues();
@@ -229,7 +563,11 @@ function getJumpTarget() {
 
 function updateJumpButtonLabel() {
     const btn = document.getElementById("jumpToTodayBtn");
-    btn.textContent = getJumpTarget().label;
+    const label = getJumpTarget().label;
+    btn.textContent = label;
+    // On a phone the button is icon-only, so the words have to live somewhere.
+    btn.title = label;
+    btn.setAttribute("aria-label", label);
 }
 
 function setupEventListeners() {
@@ -241,28 +579,27 @@ function setupEventListeners() {
     });
 
     // Filter Change Listeners
-    document.getElementById("facultyFilter").addEventListener("change", () => {
-        refreshSemNumberOptions();
-        refreshCourseOptions();
-        renderGrid();
-    });
     document.getElementById("courseFilter").addEventListener("change", () => {
+        renderRailCategories();
         refreshSemNumberOptions();
         refreshFacultyOptions();
         renderGrid();
     });
     document.getElementById("courseTypeFilter").addEventListener("change", () => {
+        renderRailCategories();
         refreshSemNumberOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
         renderGrid();
     });
     document.getElementById("semNumberFilter").addEventListener("change", () => {
+        renderRailCategories();
         refreshFacultyOptions();
         refreshCourseOptions();
         renderGrid();
     });
     document.getElementById("facultyStatusFilter").addEventListener("change", () => {
+        renderRailCategories();
         refreshSemNumberOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
@@ -276,13 +613,16 @@ function setupEventListeners() {
 function resetFilters() {
     document.getElementById("courseTypeFilter").value = "all";
     document.getElementById("semNumberFilter").value = "all";
-    document.getElementById("facultyFilter").value = "all";
+    selectedFaculty.clear();
+    categorySearch.faculty = "";
+    categorySearch.course = "";
     document.getElementById("courseFilter").value = "all";
     document.getElementById("facultyStatusFilter").value = "all";
     refreshSemNumberOptions();
     refreshFacultyOptions();
     refreshCourseOptions();
     renderGrid();
+    renderRail();
 }
 
 function changeWeek(days) {
@@ -299,7 +639,6 @@ function renderGrid() {
     clearGrid();
 
     // Get Filter Values
-    const selectedFaculty = document.getElementById("facultyFilter").value;
     const selectedCourse = document.getElementById("courseFilter").value;
     const selectedCourseType = document.getElementById("courseTypeFilter").value;
     const selectedSemNumber = document.getElementById("semNumberFilter").value;
@@ -329,9 +668,10 @@ function renderGrid() {
     // Each RAW_TIMETABLE_DATA entry is one course-section; its `sessions`
     // array lists every weekday it meets (each with its own time slots,
     // since a section can meet at different times on different days).
+    const visible = [];
     RAW_TIMETABLE_DATA.forEach(item => {
         // Apply Dropdown Filters (these apply to the whole course-section)
-        if (selectedFaculty !== "all" && item.faculty !== selectedFaculty) return;
+        if (selectedFaculty.size && !getFacultyNames(item).some(n => selectedFaculty.has(n))) return;
         if (selectedCourse !== "all" && item.code !== selectedCourse) return;
         if (selectedCourseType !== "all" && item.courseType !== selectedCourseType) return;
         if (selectedSemNumber === "term1") {
@@ -346,6 +686,8 @@ function renderGrid() {
         const itemEnd = parseLocalDate(item.endDate);
         if (currentFriday < itemStart || currentMonday > itemEnd) return;
 
+        visible.push(item);
+
         item.sessions.forEach(session => {
             // Skip if this weekday is a holiday this week
             if (holidayByDay[session.day]) return;
@@ -356,8 +698,13 @@ function renderGrid() {
                     const card = document.createElement("div");
                     card.className = `course-card ${item.courseType}`;
 
+                    // Two lines: the course NAME first (what a reader actually
+                    // scans for — the code is registrar language and lives in
+                    // the detail panel), then faculty and room together.
+                    // 16 courses run more than one section and some share a
+                    // teacher, so the section letter rides along on the title.
                     const sectionBadge = item.sectionLabel
-                        ? `<span class="badge badge-section">Sec ${item.sectionLabel}</span>`
+                        ? `<span class="badge badge-section">${item.sectionLabel}</span>`
                         : "";
 
                     // Venue is per-session: a section can meet in different
@@ -365,16 +712,26 @@ function renderGrid() {
                     // on Mon/Wed but ARB104 on Tue). item.venue is the single
                     // room when every session shares one, and null otherwise,
                     // so session.venue is the value to trust here.
-                    const venue = session.venue || item.venue;
-                    const venueLine = venue
-                        ? `<div class="details venue">📍 ${venue}</div>`
-                        : "";
+                    const venue = session.venue || item.venue || "";
+                    const meta = [displayFaculty(item.faculty), shortVenue(venue)]
+                        .filter(Boolean)
+                        .join(" · ");
 
+                    card.tabIndex = 0;
+                    card.setAttribute("role", "button");
+                    card.dataset.code = item.code;
+                    card.dataset.sectionId = item.sectionId;
+                    card.dataset.day = session.day;
+                    card.title = `${item.code} · ${item.title} — ${displayFaculty(item.faculty)}${venue ? " — " + venue : ""}`;
+                    // The name gets its own span because .title is a flex row:
+                    // only the name clips, so an ellipsis always means the
+                    // course name really was cut. With the badge inside the
+                    // clipped box, 12 cards showed "..." purely because the
+                    // section chip didn't fit — reading as a truncated name
+                    // when the name was complete.
                     card.innerHTML = `
-                        <div class="code">${item.code} ${sectionBadge}</div>
-                        <div class="title">${item.title}</div>
-                        <div class="details">👤 ${item.faculty}</div>
-                        ${venueLine}
+                        <div class="title"><span class="course-name">${item.title}</span>${sectionBadge}</div>
+                        <div class="meta">${meta}</div>
                     `;
                     cell.appendChild(card);
                 }
@@ -392,6 +749,122 @@ function renderGrid() {
             firstCell.appendChild(note);
         }
     });
+
+    renderAgenda(visible, holidayByDay);
+    highlightFreeSlots(holidayByDay);
+}
+
+// When two or more people are selected, every cell that came out empty is a
+// slot where all of them are free — so the note above the grid just states
+// that and counts them.
+//
+// The empty cells are deliberately NOT tinted. A green wash read as the same
+// family as the green semester cards, so "free" and "a semester class is here"
+// looked alike; and with the grid filtered to two or three people the blank
+// cells are already the obvious thing on screen. The note carries the meaning,
+// the whitespace carries the answer.
+//
+// Below two people it stays off: one person's gaps aren't a common free slot.
+function highlightFreeSlots(holidayByDay) {
+    const hint = document.getElementById("freeSlotHint");
+    const count = selectedFaculty.size;
+
+    if (count < 2) {
+        hint.hidden = true;
+        return;
+    }
+
+    let free = 0;
+    document.querySelectorAll("td.day-cell").forEach(cell => {
+        if (cell.children.length) return;               // somebody is teaching
+        if (holidayByDay[cell.dataset.day]) return;     // holiday, not a usable slot
+        free++;
+    });
+
+    hint.hidden = false;
+    hint.textContent = free
+        ? `Empty cells below are free for all ${count} selected faculty this week — ${free} slot${free === 1 ? "" : "s"}.`
+        : `No slot this week is free for all ${count} selected faculty. Try the next week.`;
+    hint.classList.toggle("is-empty", free === 0);
+}
+
+// ============================================================
+// Phone view — day tabs + agenda
+//
+// The same filtered data as the grid, laid out one day at a time. A class
+// appears once per day at its starting slot rather than once per slot, so a
+// 2:15-6:10 class is a single row instead of four.
+// ============================================================
+
+let activeDay = "Mon";
+
+function initDayTabs() {
+    document.getElementById("dayTabs").addEventListener("click", e => {
+        const tab = e.target.closest(".day-tab");
+        if (!tab) return;
+        activeDay = tab.dataset.day;
+        renderGrid();
+    });
+}
+
+function renderDayTabs() {
+    const wrap = document.getElementById("dayTabs");
+    if (!wrap) return;
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+    wrap.innerHTML = days.map((day, idx) => {
+        const d = new Date(currentMonday);
+        d.setDate(d.getDate() + idx);
+        return `<button type="button" role="tab" class="day-tab${day === activeDay ? " is-active" : ""}"
+                    data-day="${day}" aria-selected="${day === activeDay}">
+            ${day}<span>${d.getDate()}/${d.getMonth() + 1}</span>
+        </button>`;
+    }).join("");
+}
+
+// Cards are built by the same markup as the grid, so the delegated click
+// handler and the detail panel work here with no extra code.
+function renderAgenda(visible, holidayByDay) {
+    const wrap = document.getElementById("agendaView");
+    if (!wrap) return;
+    renderDayTabs();
+
+    if (holidayByDay[activeDay]) {
+        wrap.innerHTML = `<p class="agenda-empty">Holiday: ${holidayByDay[activeDay].name}</p>`;
+        return;
+    }
+
+    const rows = [];
+    GRID_SLOTS.forEach(slot => {
+        const here = [];
+        visible.forEach(item => item.sessions.forEach(session => {
+            if (session.day !== activeDay) return;
+            if (session.timeSlots[0] !== slot) return;   // once, at its start
+            here.push({ item, session });
+        }));
+        if (here.length) rows.push({ slot, here });
+    });
+
+    if (!rows.length) {
+        wrap.innerHTML = `<p class="agenda-empty">No classes on ${DAY_LABELS[activeDay]} this week.</p>`;
+        return;
+    }
+
+    wrap.innerHTML = rows.map(({ slot, here }) => `
+        <div class="agenda-slot">
+            <div class="agenda-time">${slot}<em>${(SLOT_LABELS[slot] || "").split(" - ")[1] || ""}</em></div>
+            <div class="agenda-body">${here.map(({ item, session }) => agendaCard(item, session)).join("")}</div>
+        </div>`).join("");
+}
+
+function agendaCard(item, session) {
+    const venue = session.venue || item.venue || "";
+    const badge = item.sectionLabel ? `<span class="badge badge-section">${item.sectionLabel}</span>` : "";
+    const meta = [displayFaculty(item.faculty), shortVenue(venue)].filter(Boolean).join(" · ");
+    return `<div class="course-card ${item.courseType}" role="button" tabindex="0"
+                 data-code="${item.code}" data-section-id="${item.sectionId}" data-day="${session.day}">
+        <div class="title"><span class="course-name">${item.title}</span>${badge}</div>
+        <div class="meta">${meta}</div>
+    </div>`;
 }
 
 function updateHeaderDates() {
@@ -415,6 +888,9 @@ function updateHeaderDates() {
 }
 
 function clearGrid() {
+    // The open card is about to be destroyed (week change, filter change), so
+    // the panel describing it must go with it.
+    closeDetail();
     document.querySelectorAll(".day-cell").forEach(cell => {
         cell.innerHTML = "";
         cell.classList.remove("holiday-cell");
@@ -422,13 +898,174 @@ function clearGrid() {
 }
 
 // ============================================================
-// Find Empty Slot view
+// Course detail panel
 //
-// Separate from the main weekly timetable: given a date range, an optional
-// Saturday toggle, and a set of selected faculty, finds day/time slots
-// where NONE of the selected faculty have a class ("empty" = free for
-// everyone selected simultaneously). A slot counts as empty if it's free
-// in at least one week within the range (not necessarily every week).
+// The card is deliberately down to two lines, so everything it can no longer
+// show lives here: course code, section, full (unshortened) room name, credits,
+// cohort, every meeting time — and the date range, which matters because 14 of
+// the 56 sections don't run the full term (DESG215 ends 9 Sep, DESG218 starts
+// 12 Oct, DESG401 Sec B starts 26 Oct). Someone reading a single card has no
+// other way to tell a full-term course from a three-week one.
+//
+// The panel and its backdrop are created here rather than in index.html so
+// this feature is contained to app.js + style.css.
+// ============================================================
+
+let detailEls = null;
+let lastFocusedCard = null;
+
+function ensureDetailPanel() {
+    if (detailEls) return detailEls;
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "detail-backdrop";
+    backdrop.hidden = true;
+
+    const panel = document.createElement("aside");
+    panel.className = "detail-panel";
+    panel.hidden = true;
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-modal", "false");
+    panel.setAttribute("aria-label", "Course details");
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(panel);
+
+    backdrop.addEventListener("click", closeDetail);
+    detailEls = { backdrop, panel };
+    return detailEls;
+}
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Whole weeks a date range covers, rounded up — "12 Oct to 9 Dec" reads as
+// 9 weeks, not 8.4.
+function weeksBetween(startStr, endStr) {
+    const days = (parseLocalDate(endStr) - parseLocalDate(startStr)) / 86400000 + 1;
+    return Math.round(days / 7);
+}
+
+function prettyDate(dateStr) {
+    const d = parseLocalDate(dateStr);
+    return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// "14:15" -> "14:15 - 15:10", using the same slot labels as the grid.
+function sessionTimeRange(session) {
+    const first = session.timeSlots[0];
+    const last = session.timeSlots[session.timeSlots.length - 1];
+    const start = (SLOT_LABELS[first] || first).split(" - ")[0];
+    const end = (SLOT_LABELS[last] || last).split(" - ")[1] || "";
+    return end ? `${start} - ${end}` : start;
+}
+
+function detailRow(key, value) {
+    if (!value) return "";
+    return `<div class="detail-row"><span class="detail-key">${key}</span><span class="detail-val">${value}</span></div>`;
+}
+
+function openDetail(item, session) {
+    const { backdrop, panel } = ensureDetailPanel();
+
+    // A section that doesn't span the whole term is worth flagging — but in
+    // plain numbers, not a label. "9 of the term's 17 weeks" needs no
+    // explaining; the "Short Run" badge that used to sit here did.
+    const termStart = "2026-08-17";
+    const termEnd = item.courseType === "term" ? "2026-10-10" : "2026-12-12";
+    const isPartial = !(item.startDate === termStart && item.endDate === termEnd);
+    const runWeeks = weeksBetween(item.startDate, item.endDate);
+    const termWeeks = weeksBetween(termStart, termEnd);
+
+    // Venue belongs to the session, not the course — DESG215 Sec A is in
+    // ARB002 on Mon/Wed but ARB104 on Tue — so each session carries its own
+    // room rather than there being one "Venue" row that can only be half true.
+    //
+    // Every session renders identically. An earlier version highlighted the one
+    // whose card had been clicked, which told the reader something they already
+    // knew (they clicked it a moment ago) while reading as though it meant
+    // something about the session itself.
+    const sessions = item.sessions
+        .map(s => {
+            const room = s.venue || item.venue || "";
+            return `<li class="session-item">
+                <span class="session-when">${DAY_LABELS[s.day] || s.day} &middot; ${sessionTimeRange(s)}</span>
+                ${room ? `<span class="session-where">${room}</span>` : ""}
+            </li>`;
+        })
+        .join("");
+
+    panel.innerHTML = `
+        <button class="detail-close" type="button" aria-label="Close">&times;</button>
+        <div class="detail-code">${item.code}${item.sectionLabel ? ` &middot; Section ${item.sectionLabel}` : ""}</div>
+        <h3 class="detail-title">${item.title}</h3>
+        <div class="detail-badges">
+            <span class="badge badge-${item.facultyStatus}">${facultyTypeLabel(item.facultyStatus)}</span>
+            <span class="badge badge-${item.courseType}">${item.semTerm}</span>
+        </div>
+        ${detailRow("Faculty", displayFaculty(item.faculty))}
+        ${detailRow("Runs", `${prettyDate(item.startDate)} &rarr; ${prettyDate(item.endDate)}` +
+            (isPartial
+                ? `<span class="detail-note">${runWeeks} of the term's ${termWeeks} weeks</span>`
+                : `<span class="detail-note">the full term</span>`))}
+        ${detailRow("Sessions", `<ul class="session-list">${sessions}</ul>`)}
+        ${detailRow("Credits", item.credits)}
+        ${detailRow("Cohort", `${item.semTerm} &middot; ${item.sectionId}`)}
+    `;
+
+    panel.querySelector(".detail-close").addEventListener("click", closeDetail);
+    backdrop.hidden = false;
+    panel.hidden = false;
+    requestAnimationFrame(() => panel.classList.add("open"));
+    panel.querySelector(".detail-close").focus();
+}
+
+function closeDetail() {
+    if (!detailEls) return;
+    detailEls.panel.classList.remove("open");
+    detailEls.panel.hidden = true;
+    detailEls.backdrop.hidden = true;
+    if (lastFocusedCard && document.body.contains(lastFocusedCard)) lastFocusedCard.focus();
+    lastFocusedCard = null;
+}
+
+// One delegated listener on the grid, so it survives every re-render.
+function initDetailPanel() {
+    const targets = [document.getElementById("timetableGrid"), document.getElementById("agendaView")]
+        .filter(Boolean);
+    if (!targets.length) return;
+
+    const openFromCard = (card) => {
+        const item = RAW_TIMETABLE_DATA.find(
+            d => d.code === card.dataset.code && d.sectionId === card.dataset.sectionId
+        );
+        if (!item) return;
+        const session = item.sessions.find(s => s.day === card.dataset.day);
+        if (!session) return;
+        lastFocusedCard = card;
+        openDetail(item, session);
+    };
+
+    targets.forEach(target => {
+        target.addEventListener("click", e => {
+            const card = e.target.closest(".course-card");
+            if (card) openFromCard(card);
+        });
+        target.addEventListener("keydown", e => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            const card = e.target.closest(".course-card");
+            if (!card) return;
+            e.preventDefault();
+            openFromCard(card);
+        });
+    });
+
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape") closeDetail();
+    });
+}
+
+// ============================================================
+// Shared grid constants
 // ============================================================
 
 const GRID_SLOTS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:15", "15:15", "16:15", "17:15"];
@@ -444,257 +1081,12 @@ const SLOT_LABELS = {
     "16:15": "16:15 - 17:10",
     "17:15": "17:15 - 18:10",
 };
-const DAY_LABELS = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday" };
-
-function switchView(view) {
-    const showTimetable = view === "timetable";
-
-    document.getElementById("timetableControls").style.display = showTimetable ? "" : "none";
-    document.getElementById("timetableGridSection").style.display = showTimetable ? "" : "none";
-    document.getElementById("emptySlotControls").style.display = showTimetable ? "none" : "";
-    document.getElementById("emptySlotGridSection").style.display = showTimetable ? "none" : "";
-
-    document.getElementById("viewToggleTimetable").classList.toggle("active", showTimetable);
-    document.getElementById("viewToggleEmptySlot").classList.toggle("active", !showTimetable);
-}
-
-// Flame convention: the 1st and 3rd Saturday of each month are off.
-function isWorkingSaturday(date) {
-    const weekOfMonth = Math.ceil(date.getDate() / 7);
-    return weekOfMonth !== 1 && weekOfMonth !== 3;
-}
+const DAY_LABELS = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday" };
 
 // Most course-sections have a single faculty member. A few (e.g. DANC101,
 // co-taught by Prof. Rujuta Soman and Prof. Vrushali Lele) list multiple
-// people in `facultyList` — used only by the Find Empty Slot view so each
-// person can be selected individually, while the main grid card still shows
-// the combined `faculty` string as-is.
+// people in `facultyList`, so each can be selected individually in the
+// Faculty filter while the card still shows the combined string.
 function getFacultyNames(item) {
     return item.facultyList && item.facultyList.length ? item.facultyList : [item.faculty];
-}
-
-function initEmptySlotView() {
-    // Default range: the current calendar week (Mon-Fri), regardless of term status.
-    const today = new Date();
-    const weekStart = getMondayOf(today);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 4);
-    document.getElementById("emptyStartDate").value = formatLocalDate(weekStart);
-    document.getElementById("emptyEndDate").value = formatLocalDate(weekEnd);
-
-    // Faculty checkboxes are grouped by status (Regular / Visiting) rather
-    // than one flat alphabetical list.
-    const container = document.getElementById("facultyMultiSelect");
-    const buildGroup = (title, status) => {
-        const names = [...new Set(
-            RAW_TIMETABLE_DATA.filter(d => d.facultyStatus === status).flatMap(d => getFacultyNames(d))
-        )]
-            .filter(Boolean)
-            .sort();
-        const group = document.createElement("div");
-        group.className = "faculty-group";
-        const heading = document.createElement("div");
-        heading.className = "faculty-group-title";
-        heading.textContent = title;
-        group.appendChild(heading);
-        const grid = document.createElement("div");
-        grid.className = "faculty-group-grid";
-        names.forEach(name => {
-            const label = document.createElement("label");
-            const cb = document.createElement("input");
-            cb.type = "checkbox";
-            cb.value = name;
-            cb.className = "faculty-checkbox";
-            cb.dataset.status = status;
-            label.appendChild(cb);
-            label.appendChild(document.createTextNode(name));
-            grid.appendChild(label);
-        });
-        group.appendChild(grid);
-        return group;
-    };
-    container.appendChild(buildGroup("Regular", "regular"));
-    container.appendChild(buildGroup("Visiting", "visiting"));
-
-    document.getElementById("selectAllFacultyBtn").addEventListener("click", () => {
-        container.querySelectorAll(".faculty-checkbox").forEach(cb => (cb.checked = true));
-    });
-    document.getElementById("clearFacultyBtn").addEventListener("click", () => {
-        container.querySelectorAll(".faculty-checkbox").forEach(cb => (cb.checked = false));
-    });
-    document.getElementById("selectRegularFacultyBtn").addEventListener("click", () => {
-        container.querySelectorAll(".faculty-checkbox").forEach(cb => (cb.checked = cb.dataset.status === "regular"));
-    });
-    document.getElementById("selectVisitingFacultyBtn").addEventListener("click", () => {
-        container.querySelectorAll(".faculty-checkbox").forEach(cb => (cb.checked = cb.dataset.status === "visiting"));
-    });
-
-    document.getElementById("findEmptySlotsBtn").addEventListener("click", runEmptySlotSearch);
-    document.getElementById("viewToggleTimetable").addEventListener("click", () => switchView("timetable"));
-    document.getElementById("viewToggleEmptySlot").addEventListener("click", () => switchView("emptySlot"));
-
-    // Picking a start date snaps it to that week's Monday and auto-fills
-    // the end date with that week's Friday, then immediately searches that
-    // full week (if faculty are already selected).
-    document.getElementById("emptyStartDate").addEventListener("change", () => {
-        const startInput = document.getElementById("emptyStartDate");
-        if (!startInput.value) return;
-        const weekStart = getMondayOf(parseLocalDate(startInput.value));
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 4);
-        startInput.value = formatLocalDate(weekStart);
-        document.getElementById("emptyEndDate").value = formatLocalDate(weekEnd);
-        runEmptySlotSearch();
-    });
-
-    // Render an initial blank grid so the view isn't empty before a search runs.
-    renderEmptySlotGrid(null, false);
-}
-
-function showEmptySlotMessage(text) {
-    const el = document.getElementById("emptySlotMessage");
-    if (!text) {
-        el.style.display = "none";
-        el.textContent = "";
-        return;
-    }
-    el.textContent = text;
-    el.style.display = "block";
-}
-
-function runEmptySlotSearch() {
-    const startVal = document.getElementById("emptyStartDate").value;
-    const endVal = document.getElementById("emptyEndDate").value;
-    const includeSaturday = document.getElementById("includeSaturdayCheckbox").checked;
-    const selectedFaculty = [...document.querySelectorAll(".faculty-checkbox:checked")].map(cb => cb.value);
-
-    if (!startVal || !endVal) {
-        showEmptySlotMessage("Pick a start and end date.");
-        renderEmptySlotGrid(null, includeSaturday);
-        return;
-    }
-    if (selectedFaculty.length === 0) {
-        showEmptySlotMessage("Select at least one faculty member.");
-        renderEmptySlotGrid(null, includeSaturday);
-        return;
-    }
-
-    const rangeStart = parseLocalDate(startVal);
-    const rangeEnd = parseLocalDate(endVal);
-    if (rangeEnd < rangeStart) {
-        showEmptySlotMessage("The end date is before the start date.");
-        renderEmptySlotGrid(null, includeSaturday);
-        return;
-    }
-
-    const days = includeSaturday ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Mon", "Tue", "Wed", "Thu", "Fri"];
-    const dayOffsets = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
-
-    // Precompute every busy [start,end] date range for the selected faculty,
-    // keyed by day + slot.
-    const busy = {};
-    days.forEach(d => {
-        busy[d] = {};
-        GRID_SLOTS.forEach(s => (busy[d][s] = []));
-    });
-    RAW_TIMETABLE_DATA.forEach(item => {
-        if (!getFacultyNames(item).some(name => selectedFaculty.includes(name))) return;
-        const itemStart = parseLocalDate(item.startDate);
-        const itemEnd = parseLocalDate(item.endDate);
-        item.sessions.forEach(session => {
-            if (!days.includes(session.day)) return;
-            session.timeSlots.forEach(slot => {
-                busy[session.day][slot].push({ start: itemStart, end: itemEnd });
-            });
-        });
-    });
-
-    // empty[day][slot] === true  -> free in at least one valid week (highlighted)
-    // empty[day][slot] === false -> checked, but always busy in every valid week
-    // empty[day][slot] === null  -> no valid week to check at all (e.g. an
-    //                                all-1st/3rd-Saturday range), shown as N/A
-    const empty = {};
-    const anyValidWeek = {};
-    days.forEach(d => {
-        empty[d] = {};
-        anyValidWeek[d] = {};
-        GRID_SLOTS.forEach(s => {
-            empty[d][s] = false;
-            anyValidWeek[d][s] = false;
-        });
-    });
-
-    let weekMonday = getMondayOf(rangeStart);
-    while (weekMonday <= rangeEnd) {
-        days.forEach(day => {
-            const dayDate = new Date(weekMonday);
-            dayDate.setDate(dayDate.getDate() + dayOffsets[day]);
-            if (dayDate < rangeStart || dayDate > rangeEnd) return;
-            if (getHolidayForDate(formatLocalDate(dayDate))) return;
-            if (day === "Sat" && !isWorkingSaturday(dayDate)) return;
-
-            GRID_SLOTS.forEach(slot => {
-                if (empty[day][slot]) return; // already confirmed free in an earlier week
-                anyValidWeek[day][slot] = true;
-                const isBusy = busy[day][slot].some(range => dayDate >= range.start && dayDate <= range.end);
-                if (!isBusy) empty[day][slot] = true;
-            });
-        });
-        const nextMonday = new Date(weekMonday);
-        nextMonday.setDate(nextMonday.getDate() + 7);
-        weekMonday = nextMonday;
-    }
-
-    const result = {};
-    let totalEmpty = 0;
-    days.forEach(day => {
-        result[day] = {};
-        GRID_SLOTS.forEach(slot => {
-            if (!anyValidWeek[day][slot]) {
-                result[day][slot] = null;
-            } else {
-                result[day][slot] = empty[day][slot];
-                if (empty[day][slot]) totalEmpty++;
-            }
-        });
-    });
-
-    showEmptySlotMessage(totalEmpty === 0 ? "No empty slots found for this faculty selection and date range." : null);
-    renderEmptySlotGrid(result, includeSaturday);
-}
-
-// The grid always shows all six day columns (Mon-Sat) so the layout doesn't
-// shift when the Saturday checkbox is toggled. Saturday's cells only reflect
-// actual search results when includeSaturday is checked; otherwise they show
-// a distinct "not included" state.
-function renderEmptySlotGrid(resultMap, includeSaturday) {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-    const head = document.getElementById("emptySlotHead");
-    head.innerHTML = `<tr><th class="time-col">Time Slot</th>${days.map(d => `<th>${DAY_LABELS[d]}</th>`).join("")}</tr>`;
-
-    const body = document.getElementById("emptySlotBody");
-    body.innerHTML = "";
-    GRID_SLOTS.forEach(slot => {
-        let rowHtml = `<td class="time-label">${SLOT_LABELS[slot]}</td>`;
-        days.forEach(day => {
-            let cls = "day-cell slot-unavailable";
-            let content = "";
-            if (day === "Sat" && !includeSaturday) {
-                cls = "day-cell slot-not-searched";
-            } else {
-                const status = resultMap ? resultMap[day][slot] : null;
-                if (status === true) {
-                    cls = "day-cell slot-free";
-                    content = `<div class="free-label">Free</div>`;
-                } else if (status === false) {
-                    cls = "day-cell slot-busy";
-                }
-            }
-            rowHtml += `<td class="${cls}">${content}</td>`;
-        });
-        const tr = document.createElement("tr");
-        tr.innerHTML = rowHtml;
-        body.appendChild(tr);
-    });
 }

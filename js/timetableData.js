@@ -11,14 +11,19 @@
 // session.venue for the per-day room.
 //
 // Notes on this revision:
-//   - The new sheet has no Regular/Visiting column; facultyStatus is carried
-//     over from the previous sheet by faculty name. Prof. Madhan Raj (new on
+//   - The new sheet has no faculty-type column; facultyStatus is carried over
+//     from the previous sheet by faculty name. Prof. Madhan Raj (new on
 //     DESG319) is recorded as visiting.
+//   - facultyStatus is one of "full-time" | "adjunct" | "visiting". The old
+//     sheet's "Regular" is now "full-time"; Prof. Amit Inamdar (DESG218 Sec A
+//     and B) is "adjunct".
 //   - "Prof. Sameer Dubley" on MUSC101 is normalised to "Prof. Sameer Dublay"
 //     (same person as on MUSC206 / MUSC303).
 //   - Prof. Saraang Gangoo is now spelt "Prof. Sarang Ganoo" per the new sheet.
 //   - PGPE426 (PGPETERM1, batch PGPEI2026) is new: treated as a Term course and
 //     tagged with program: "PGPE" so it can be styled/filtered separately.
+//   - Venue spelling normalised: "Shanti Niketan Dance Studio" -> "Shantiniketan
+//     Dance Studio", matching "Shantiniketan Seminar Room" already in the sheet.
 //   - Sem-5 DESG361 is now DESG362; THEA310 is 3 credits (was 4); the duplicate
 //     UGSEM7B DESG381 row is gone; DANC105 moved to section UGTERM1A.
 const RAW_TIMETABLE_DATA = [
@@ -77,7 +82,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Sketching and Prototyping",
     "credits": 3,
     "faculty": "Prof. Dishant Pradhan",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM3B",
     "sectionLabel": "B",
     "venue": null,
@@ -124,7 +129,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Sketching and Prototyping",
     "credits": 3,
     "faculty": "Prof. Dishant Pradhan",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
     "venue": null,
@@ -218,7 +223,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Design Studio - Product Design",
     "credits": 3,
     "faculty": "Prof. Amit Inamdar",
-    "facultyStatus": "visiting",
+    "facultyStatus": "adjunct",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
     "venue": "Visual Art Studio",
@@ -252,7 +257,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Design Studio - Product Design",
     "credits": 3,
     "faculty": "Prof. Amit Inamdar",
-    "facultyStatus": "visiting",
+    "facultyStatus": "adjunct",
     "sectionId": "UGSEM3B",
     "sectionLabel": "B",
     "venue": "APJ Design Lab",
@@ -286,7 +291,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Applied Programming for Creators",
     "credits": 3,
     "faculty": "Prof. Amit Jena",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM3",
     "sectionLabel": null,
     "venue": "APJ104",
@@ -312,7 +317,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Design Thinking and Design Process",
     "credits": 3,
     "faculty": "Prof. Amit Kundal",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
     "venue": "APJ103",
@@ -339,7 +344,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Basics of Graphic Design",
     "credits": 3,
     "faculty": "Prof. Soumitra Kemkar",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",
     "venue": "ARB001",
@@ -372,7 +377,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Design Thinking and Design Process",
     "credits": 3,
     "faculty": "Prof. Shamit Shrivastav",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM3B",
     "sectionLabel": "B",
     "venue": "Arjuna Seminar Room 001",
@@ -405,7 +410,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Basics of Graphic Design",
     "credits": 3,
     "faculty": "Prof. Soumitra Kemkar",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM3B",
     "sectionLabel": "B",
     "venue": "APJ Design Lab",
@@ -471,7 +476,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Basics of Acting",
     "credits": 3,
     "faculty": "Prof. Ashwini Giri",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM3",
     "sectionLabel": null,
     "venue": "Arjuna Conditioning Studio",
@@ -505,7 +510,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Vocal I",
     "credits": 3,
     "faculty": "Prof. Sameer Dublay",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM3",
     "sectionLabel": null,
     "venue": "Preview Theater (Kabir)",
@@ -539,7 +544,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Game Design",
     "credits": 3,
     "faculty": "Prof. Vinod Vidwans",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5A",
     "sectionLabel": "A",
     "venue": "Visual Art Studio",
@@ -635,7 +640,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Service Design",
     "credits": 3,
     "faculty": "Prof. Shamit Shrivastav",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5A",
     "sectionLabel": "A",
     "venue": "APJ Design Lab",
@@ -731,7 +736,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Information and Data Visualization",
     "credits": 3,
     "faculty": "Prof. Amit Jena",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5A",
     "sectionLabel": "A",
     "venue": "APJ Focus Room 202",
@@ -764,7 +769,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Service Design",
     "credits": 3,
     "faculty": "Prof. Avani Chaturvedi",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5B",
     "sectionLabel": "B",
     "venue": "Raman 001",
@@ -797,7 +802,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Service Design",
     "credits": 3,
     "faculty": "Prof. Avani Chaturvedi",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5C",
     "sectionLabel": "C",
     "venue": "Raman 001",
@@ -830,7 +835,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Special Topics in Design (Visual Storytelling)",
     "credits": 3,
     "faculty": "Prof. Sherline Pimenta",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
     "venue": "Learning Commons A & B",
@@ -856,7 +861,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Game design",
     "credits": 3,
     "faculty": "Prof. Vinod Vidwans",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5B",
     "sectionLabel": "B",
     "venue": null,
@@ -889,7 +894,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Information and Data Visualization",
     "credits": 3,
     "faculty": "Prof. Amit Jena",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5B",
     "sectionLabel": "B",
     "venue": "APJ Focus Room 201",
@@ -922,10 +927,10 @@ const RAW_TIMETABLE_DATA = [
     "title": "Choreography",
     "credits": 3,
     "faculty": "Prof. Priya Joshi",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
-    "venue": "Shanti Niketan Dance Studio",
+    "venue": "Shantiniketan Dance Studio",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -935,7 +940,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Shanti Niketan Dance Studio"
+        "venue": "Shantiniketan Dance Studio"
       },
       {
         "day": "Thu",
@@ -943,7 +948,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Shanti Niketan Dance Studio"
+        "venue": "Shantiniketan Dance Studio"
       }
     ]
   },
@@ -955,7 +960,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Dance Drama",
     "credits": 3,
     "faculty": "Prof. Ashwini Giri",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
     "venue": "Kalidas",
@@ -1022,7 +1027,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Aesthetics of Music",
     "credits": 3,
     "faculty": "Prof. Sameer Dublay",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM5",
     "sectionLabel": null,
     "venue": "Preview Theater (Kabir)",
@@ -1148,7 +1153,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Behavior Design",
     "credits": 3,
     "faculty": "Prof. Mayank Loonker",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM7A",
     "sectionLabel": "A",
     "venue": "Arjuna Seminar Room 001",
@@ -1181,7 +1186,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Capstone Project 1",
     "credits": 2,
     "faculty": "Prof. Nikhil Welankar",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
     "venue": "ARB103",
@@ -1207,7 +1212,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Systems Thinking",
     "credits": 3,
     "faculty": "Prof. Amit Kundal",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
     "venue": "APJ103",
@@ -1297,7 +1302,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Behavior Design",
     "credits": 3,
     "faculty": "Prof. Mayank Loonker",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM7B",
     "sectionLabel": "B",
     "venue": null,
@@ -1387,10 +1392,10 @@ const RAW_TIMETABLE_DATA = [
     "title": "Performance-Ensemble Dance Production",
     "credits": 3,
     "faculty": "Prof. Priya Joshi",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
-    "venue": "Shanti Niketan Dance Studio",
+    "venue": "Shantiniketan Dance Studio",
     "startDate": "2026-08-17",
     "endDate": "2026-12-12",
     "sessions": [
@@ -1400,7 +1405,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Shanti Niketan Dance Studio"
+        "venue": "Shantiniketan Dance Studio"
       },
       {
         "day": "Wed",
@@ -1409,7 +1414,7 @@ const RAW_TIMETABLE_DATA = [
           "14:15",
           "15:15"
         ],
-        "venue": "Shanti Niketan Dance Studio"
+        "venue": "Shantiniketan Dance Studio"
       }
     ]
   },
@@ -1421,7 +1426,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Globalization and contemporary theater in India (Theory)",
     "credits": 3,
     "faculty": "Prof. Ashutosh Potdar",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGSEM7",
     "sectionLabel": null,
     "venue": "Focus Room 201 Chandragupta West Wing",
@@ -1453,7 +1458,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Materials and Processes",
     "credits": 2,
     "faculty": "Prof. Avani Chaturvedi",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
     "venue": "APJ Design Lab",
@@ -1519,7 +1524,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Design Studio (Learning by Doing)",
     "credits": 2,
     "faculty": "Prof. Pathik Desai",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
     "venue": "APJ Design Lab",
@@ -1559,7 +1564,7 @@ const RAW_TIMETABLE_DATA = [
     "facultyStatus": "visiting",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
-    "venue": "Shanti Niketan Dance Studio",
+    "venue": "Shantiniketan Dance Studio",
     "startDate": "2026-08-17",
     "endDate": "2026-10-10",
     "sessions": [
@@ -1569,7 +1574,7 @@ const RAW_TIMETABLE_DATA = [
           "12:00",
           "13:00"
         ],
-        "venue": "Shanti Niketan Dance Studio"
+        "venue": "Shantiniketan Dance Studio"
       },
       {
         "day": "Thu",
@@ -1577,7 +1582,7 @@ const RAW_TIMETABLE_DATA = [
           "12:00",
           "13:00"
         ],
-        "venue": "Shanti Niketan Dance Studio"
+        "venue": "Shantiniketan Dance Studio"
       }
     ]
   },
@@ -1589,7 +1594,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Introduction to Drama and Theatre",
     "credits": 2,
     "faculty": "Prof. Ashutosh Potdar",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
     "venue": null,
@@ -1754,7 +1759,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Elements and Principles of Design",
     "credits": 2,
     "faculty": "Prof. Sherline Pimenta",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1B",
     "sectionLabel": "B",
     "venue": "APJ Design Lab",
@@ -1854,7 +1859,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Digital Visualization and Representation",
     "credits": 2,
     "faculty": "Prof. Soumitra Kemkar",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
     "venue": "Library Computer Lab",
@@ -1887,7 +1892,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Composing with Colors",
     "credits": 2,
     "faculty": "Prof. Suniti Vadalkar",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
     "venue": "Raman 001",
@@ -1920,7 +1925,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Principles of Music",
     "credits": 2,
     "faculty": "Prof. Sameer Dublay",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1",
     "sectionLabel": null,
     "venue": "Preview Theater (Kabir)",
@@ -1953,7 +1958,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Elements and Principles of Design",
     "credits": 2,
     "faculty": "Prof. Suniti Vadalkar",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1A",
     "sectionLabel": "A",
     "venue": "APJ Design Lab",
@@ -1986,7 +1991,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Introduction to Drawing",
     "credits": 2,
     "faculty": "Prof. Swayamsiddha Panigrahi",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1A",
     "sectionLabel": "A",
     "venue": "Raman 001",
@@ -2019,7 +2024,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Introduction to Drawing",
     "credits": 2,
     "faculty": "Prof. Dishant Pradhan",
-    "facultyStatus": "regular",
+    "facultyStatus": "full-time",
     "sectionId": "UGTERM1B",
     "sectionLabel": "B",
     "venue": "Sculpture Studio",
