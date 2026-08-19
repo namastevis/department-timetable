@@ -554,15 +554,23 @@ th {
 }
 
 /* ---- Today ------------------------------------------------------------
-   Laptop view: today's column reads as one vertical band — a lit header cell
-   with an amber underline, and a faint tint running the full height of the
-   column so the day stays findable once the header has scrolled under the
-   toolbar. Only ever one column, and only when the week on screen is the real
-   current week (see todayColumn() in app.js), so paging forward leaves the
-   grid with no highlight at all rather than a misleading one. */
+   Amber, everywhere, and amber ONLY. The grid already spends green on
+   semester courses and blue on term courses, so a blue "today" competed with
+   the card colours for the same meaning — a tinted column read as "these are
+   term classes". Amber is the one hue the legend doesn't use, which leaves
+   today unambiguous at a glance.
+
+   Laptop view: today's column reads as one vertical band — an amber bar under
+   the header cell, and a warm tint running the column's full height so the day
+   stays findable once the header has scrolled under the toolbar. Only ever one
+   column, and only when the week on screen is the real current week (see
+   todayColumn() in app.js), so paging forward leaves the grid with no
+   highlight at all rather than a misleading one. */
 #timetableGrid th.is-today {
-    background-color: #2b6cb0;
-    box-shadow: inset 0 -3px 0 #f6ad55;
+    /* Header background stays the same dark as the other four days. The bar
+       and the pill carry the whole signal, so nothing here can be mistaken
+       for a course colour. */
+    box-shadow: inset 0 -4px 0 #f6ad55;
 }
 
 #timetableGrid th.is-today .th-date {
@@ -586,15 +594,16 @@ th {
 }
 
 /* Chip beside the week label whenever the displayed week contains today, so
-   "no highlight in the grid" is never ambiguous. */
+   "no highlight in the grid" is never ambiguous. Amber like the rest of the
+   today treatment, not blue — blue is the term-course colour. */
 .week-controls.is-current-week #currentWeekDisplay::after {
     content: "This week";
     margin-left: 0.45rem;
     padding: 2px 7px;
     border-radius: 999px;
-    background: #ebf8ff;
-    border: 1px solid #bee3f8;
-    color: #2b6cb0;
+    background: #fffaf0;
+    border: 1px solid #fbd38d;
+    color: #b7791f;
     font-size: 0.62rem;
     font-weight: 700;
     letter-spacing: 0.03em;
@@ -608,13 +617,19 @@ th {
     background-color: #ffffff;
 }
 
-/* Deliberately faint: the cards carry the green/blue course colours and must
-   stay the loudest thing in the cell. :not(.holiday-cell) so a holiday falling
-   on today keeps its striped treatment. */
+/* Warm and deliberately faint. Warm because a pale BLUE column was the real
+   problem: it sat directly behind #ebf8ff term cards, so the empty parts of
+   the column looked like term-coloured cells and the term cards themselves
+   lost their edge against it. Cream sits behind both card colours without
+   belonging to either, and makes green and blue read more distinctly, not
+   less. Same #fffaf0 as the phone's today tab.
+
+   :not(.holiday-cell) so a holiday falling on today keeps its striped
+   treatment. */
 .day-cell.is-today-col:not(.holiday-cell) {
-    background-color: #f2f8ff;
-    box-shadow: inset 1px 0 0 rgba(43, 108, 176, 0.18),
-                inset -1px 0 0 rgba(43, 108, 176, 0.18);
+    background-color: #fffaf0;
+    box-shadow: inset 1px 0 0 rgba(214, 158, 46, 0.28),
+                inset -1px 0 0 rgba(214, 158, 46, 0.28);
 }
 
 /* Course Cards in Grid
