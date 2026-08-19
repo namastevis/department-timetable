@@ -617,20 +617,12 @@ th {
     background-color: #ffffff;
 }
 
-/* Warm and deliberately faint. Warm because a pale BLUE column was the real
-   problem: it sat directly behind #ebf8ff term cards, so the empty parts of
-   the column looked like term-coloured cells and the term cards themselves
-   lost their edge against it. Cream sits behind both card colours without
-   belonging to either, and makes green and blue read more distinctly, not
-   less. Same #fffaf0 as the phone's today tab.
-
-   :not(.holiday-cell) so a holiday falling on today keeps its striped
-   treatment. */
-.day-cell.is-today-col:not(.holiday-cell) {
-    background-color: #fffaf0;
-    box-shadow: inset 1px 0 0 rgba(214, 158, 46, 0.28),
-                inset -1px 0 0 rgba(214, 158, 46, 0.28);
-}
+/* No column tint. It was tried in two colours and both lost: a pale blue
+   column read as "these are term classes", and even a neutral cream put a
+   second background behind cards whose own backgrounds are the legend. The
+   header bar alone is enough — nothing in the cells competes with the cards,
+   and the header row is sticky, so the marker stays on screen the whole way
+   down the day anyway. */
 
 /* Course Cards in Grid
    Two lines: course name (+ section letter), then faculty · room. Tight
@@ -1126,9 +1118,10 @@ th {
        one; TODAY is the amber one. They are usually the same tab (the phone
        view opens on today) but must stay tellable apart the moment you tap
        another day, or swipe to another week where nothing is today. */
+    /* Text and the cap bar only — no fill, matching the desktop header where
+       the bar alone marks today. */
     .day-tab.is-today {
         color: #b7791f;
-        background: #fffaf0;
     }
 
     .day-tab.is-today span {

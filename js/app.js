@@ -1058,12 +1058,10 @@ function updateHeaderDates() {
             else th.removeAttribute("aria-current");
         }
     });
-
-    // Tint the whole column, not just its header, so the day stays findable
-    // once you have scrolled past the sticky header row.
-    document.querySelectorAll("td.day-cell").forEach(cell => {
-        cell.classList.toggle("is-today-col", cell.dataset.day === todayKey);
-    });
+    // Deliberately no per-cell marking: the highlight lives entirely on the
+    // header row, which is sticky and therefore always on screen. That also
+    // keeps this a five-element update rather than a walk over all fifty cells
+    // on every filter change.
 }
 
 function clearGrid() {
