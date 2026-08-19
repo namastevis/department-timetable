@@ -62,6 +62,21 @@ function getMondayOf(date) {
 
 let currentMonday = getMondayOf(parseLocalDate("2026-08-17")); // Default: Term 1 start date
 
+// The five columns of the grid, in order. Shared by the header, the phone day
+// tabs and the today-highlight below, so they can never drift apart.
+const DAY_KEYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
+// Which column of the week ON SCREEN is today — "Mon".."Fri", or null.
+// Null covers both "you have paged to a different week" and "today is Saturday
+// or Sunday", which is exactly when nothing should be highlighted.
+function todayColumn() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Both dates are local midnight, so rounding absorbs any DST hour.
+    const diff = Math.round((today - currentMonday) / 86400000);
+    return diff >= 0 && diff <= 4 ? DAY_KEYS[diff] : null;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     initFilters();
     renderGrid();
@@ -935,7 +950,10 @@ function renderGrid() {
 // in all four, same as desktop. Empty rows stay blank, same as an empty cell.
 // ============================================================
 
-let activeDay = "Mon";
+// Phones open on today when today is a weekday, otherwise Monday — landing on
+// "Mon" during a Thursday lecture was the most common reason to have to tap
+// before reading anything.
+let activeDay = todayColumn() || "Mon";
 
 function initDayTabs() {
     const tabs = document.getElementById("dayTabs");
@@ -951,13 +969,20 @@ function initDayTabs() {
 function renderDayTabs() {
     const wrap = document.getElementById("dayTabs");
     if (!wrap) return;
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-    wrap.innerHTML = days.map((day, idx) => {
+    const todayKey = todayColumn();
+    wrap.innerHTML = DAY_KEYS.map((day, idx) => {
         const d = new Date(currentMonday);
         d.setDate(d.getDate() + idx);
-        return `<button type="button" role="tab" class="day-tab${day === activeDay ? " is-active" : ""}"
-                    data-day="${day}" aria-selected="${day === activeDay}">
-            ${day}<span>${d.getDate()}/${d.getMonth() + 1}</span>
+        const isToday = day === todayKey;
+        // Two independent states on the same control: "is-active" is the tab
+        // you have chosen, "is-today" is the real date. They can be on the
+        // same tab or different ones, so they read differently — the active
+        // tab is filled, today carries a dot and an accent date.
+        return `<button type="button" role="tab"
+                    class="day-tab${day === activeDay ? " is-active" : ""}${isToday ? " is-today" : ""}"
+                    data-day="${day}" aria-selected="${day === activeDay}"
+                    ${isToday ? 'aria-current="date"' : ""}>
+            ${day}<span>${isToday ? "Today" : `${d.getDate()}/${d.getMonth() + 1}`}</span>
         </button>`;
     }).join("");
 }
@@ -1013,15 +1038,31 @@ function updateHeaderDates() {
     // saying 2026.
     document.getElementById("currentWeekDisplay").textContent =
         `Week of ${formatDate(currentMonday)} – ${formatDate(friday)}, ${friday.getFullYear()}`;
+    // "This week" chip beside the week label, so a reader can tell at a glance
+    // whether they have paged away from the present.
+    document.querySelector(".week-controls")
+        ?.classList.toggle("is-current-week", todayColumn() !== null);
 
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-    days.forEach((day, idx) => {
+    const todayKey = todayColumn();
+    DAY_KEYS.forEach((day, idx) => {
         const d = new Date(currentMonday);
         d.setDate(d.getDate() + idx);
         const th = document.getElementById(`th-${day}`);
         if (th) {
-            th.textContent = `${day} (${d.getDate()}/${d.getMonth() + 1})`;
+            const isToday = day === todayKey;
+            th.innerHTML = `${day} <span class="th-date">(${d.getDate()}/${d.getMonth() + 1})</span>` +
+                (isToday ? `<span class="today-pill">Today</span>` : "");
+            th.classList.toggle("is-today", isToday);
+            // Screen readers get the same signal the colour gives everyone else.
+            if (isToday) th.setAttribute("aria-current", "date");
+            else th.removeAttribute("aria-current");
         }
+    });
+
+    // Tint the whole column, not just its header, so the day stays findable
+    // once you have scrolled past the sticky header row.
+    document.querySelectorAll("td.day-cell").forEach(cell => {
+        cell.classList.toggle("is-today-col", cell.dataset.day === todayKey);
     });
 }
 

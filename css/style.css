@@ -548,9 +548,73 @@ th {
     font-size: 0.95rem;
 }
 
+.th-date {
+    font-weight: 400;
+    opacity: 0.75;
+}
+
+/* ---- Today ------------------------------------------------------------
+   Laptop view: today's column reads as one vertical band — a lit header cell
+   with an amber underline, and a faint tint running the full height of the
+   column so the day stays findable once the header has scrolled under the
+   toolbar. Only ever one column, and only when the week on screen is the real
+   current week (see todayColumn() in app.js), so paging forward leaves the
+   grid with no highlight at all rather than a misleading one. */
+#timetableGrid th.is-today {
+    background-color: #2b6cb0;
+    box-shadow: inset 0 -3px 0 #f6ad55;
+}
+
+#timetableGrid th.is-today .th-date {
+    opacity: 0.9;
+}
+
+/* A word, not just a colour — colour alone isn't readable for everyone, and on
+   a projector blue-on-dark can be hard to tell apart. */
+.today-pill {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #f6ad55;
+    color: #2a2a2a;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    vertical-align: 1px;
+}
+
+/* Chip beside the week label whenever the displayed week contains today, so
+   "no highlight in the grid" is never ambiguous. */
+.week-controls.is-current-week #currentWeekDisplay::after {
+    content: "This week";
+    margin-left: 0.45rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #ebf8ff;
+    border: 1px solid #bee3f8;
+    color: #2b6cb0;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    vertical-align: 2px;
+}
+
 .day-cell {
     min-height: 80px;
     background-color: #ffffff;
+}
+
+/* Deliberately faint: the cards carry the green/blue course colours and must
+   stay the loudest thing in the cell. :not(.holiday-cell) so a holiday falling
+   on today keeps its striped treatment. */
+.day-cell.is-today-col:not(.holiday-cell) {
+    background-color: #f2f8ff;
+    box-shadow: inset 1px 0 0 rgba(43, 108, 176, 0.18),
+                inset -1px 0 0 rgba(43, 108, 176, 0.18);
 }
 
 /* Course Cards in Grid
@@ -1041,6 +1105,35 @@ th {
         color: #2b6cb0;
         border-bottom-color: #3182ce;
         background: #f7fbff;
+    }
+
+    /* Two states, two languages. The tab you TAPPED is the blue-underlined
+       one; TODAY is the amber one. They are usually the same tab (the phone
+       view opens on today) but must stay tellable apart the moment you tap
+       another day, or swipe to another week where nothing is today. */
+    .day-tab.is-today {
+        color: #b7791f;
+        background: #fffaf0;
+    }
+
+    .day-tab.is-today span {
+        color: #b7791f;
+        font-weight: 700;
+    }
+
+    /* Amber cap along the top edge — doesn't compete with the blue active
+       underline along the bottom, so a tab can wear both at once. */
+    .day-tab.is-today::before {
+        content: "";
+        display: block;
+        height: 3px;
+        margin: -0.5rem -0.15rem 0.35rem;
+        background: #f6ad55;
+    }
+
+    /* Phone toolbar is tight and the "Today" tab already says it. */
+    .week-controls.is-current-week #currentWeekDisplay::after {
+        display: none;
     }
 
     .agenda-view {
