@@ -3,19 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Faculty of Design, Art & Performance | Department Timetable, AY 2026-27</title>
-    <link rel="stylesheet" href="css/style.css?v=18" />
+    <title>Faculty of Design, Art &amp; Performance | Department Timetable</title>
+    <link rel="stylesheet" href="css/style.css?v=19" />
   </head>
   <!-- ?v=N on the CSS and JS: GitHub Pages caches these filenames hard, so a
        push can leave people staring at the previous build until they force a
        reload. Bumping this number makes the URL new, which the browser has to
-       fetch. Increment it whenever app.js, style.css or timetableData.js
+       fetch. Increment it whenever app.js, loader.js, config.js or style.css
        changes. -->
   <body>
     <header class="top-bar">
       <div class="brand">
         <h1>Faculty of Design, Art &amp; Performance</h1>
-        <p>Department Timetable, AY 2026–27 (Term 1 &amp; Semesters 3, 5, 7)</p>
+        <p id="pageSubtitle">Department Timetable</p>
       </div>
     </header>
 
@@ -35,11 +35,11 @@
 
       <div class="week-controls">
         <button id="prevWeekBtn" class="btn">&larr; Previous Week</button>
-        <h2 id="currentWeekDisplay">Loading dates...</h2>
+        <h2 id="currentWeekDisplay">Loading timetable…</h2>
         <button id="nextWeekBtn" class="btn">Next Week &rarr;</button>
       </div>
 
-      <button id="jumpToTodayBtn" class="btn btn-secondary">Jump to Term Start</button>
+      <button id="jumpToTodayBtn" class="btn btn-secondary is-hidden" aria-hidden="true" tabindex="-1">Jump to Current Week</button>
     </div>
 
     <!-- The five filters still exist as real form controls so every existing
@@ -48,20 +48,13 @@
          the rail sets the control and fires its change event. They are hidden
          visually, not with display:none, so they stay focusable by scripts. -->
     <div class="visually-hidden" aria-hidden="true">
-      <select id="courseTypeFilter">
-        <option value="all">Semester &amp; Term</option>
-        <option value="semester">Semester (Green)</option>
-        <option value="term">Term (Blue)</option>
-      </select>
+      <!-- Options are filled from the sheet's data in app.js (buildFilterChoices). -->
+      <select id="levelFilter"><option value="all">UG &amp; PG</option></select>
+      <select id="courseTypeFilter"><option value="all">Semester &amp; Term</option></select>
       <select id="semNumberFilter"><option value="all">All Semesters &amp; Terms</option></select>
       <select id="courseFilter"><option value="all">All Courses</option></select>
       <select id="venueFilter"><option value="all">All Venues</option></select>
-      <select id="facultyStatusFilter">
-        <option value="all">All Faculty Types</option>
-        <option value="full-time">Full-time</option>
-        <option value="adjunct">Adjunct</option>
-        <option value="visiting">Visiting</option>
-      </select>
+      <select id="facultyStatusFilter"><option value="all">All Faculty Types</option></select>
     </div>
 
     <div class="workspace rail-hidden" id="workspace">
@@ -85,6 +78,7 @@
              instead. Both views are rendered from the same data by renderGrid. -->
         <div class="day-tabs" id="dayTabs" role="tablist" aria-label="Day"></div>
 
+        <p id="dataNotice" class="data-notice" role="status" hidden></p>
         <p id="weekJumpNotice" class="week-jump-notice" hidden></p>
 
         <section class="grid-card">
@@ -101,96 +95,16 @@
                 <th id="th-Fri">Friday</th>
               </tr>
             </thead>
-            <tbody id="gridBody">
-              <tr data-time="08:00">
-                <td class="time-label">08:00 - 08:55</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-              <tr data-time="09:00">
-                <td class="time-label">09:00 - 09:55</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-              <tr data-time="10:00">
-                <td class="time-label">10:00 - 10:55</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-              <tr data-time="11:00">
-                <td class="time-label">11:00 - 11:55</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-              <tr data-time="12:00">
-                <td class="time-label">12:00 - 12:55</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-              <tr data-time="13:00">
-                <td class="time-label">13:00 - 13:55</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-              <tr data-time="14:15">
-                <td class="time-label">14:15 - 15:10</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-              <tr data-time="15:15">
-                <td class="time-label">15:15 - 16:10</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-              <tr data-time="16:15">
-                <td class="time-label">16:15 - 17:10</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-              <tr data-time="17:15">
-                <td class="time-label">17:15 - 18:10</td>
-                <td class="day-cell" data-day="Mon"></td>
-                <td class="day-cell" data-day="Tue"></td>
-                <td class="day-cell" data-day="Wed"></td>
-                <td class="day-cell" data-day="Thu"></td>
-                <td class="day-cell" data-day="Fri"></td>
-              </tr>
-            </tbody>
+            <tbody id="gridBody"><!-- one row per slot, built from the sheet --></tbody>
           </table>
           </div>
         </section>
       </main>
     </div>
 
-    <!-- Scripts -->
-    <script src="js/timetableData.js?v=18"></script>
-    <script src="js/app.js?v=18"></script>
+    <!-- Scripts: config (which sheet), loader (reads it), app (draws it) -->
+    <script src="js/config.js?v=19"></script>
+    <script src="js/loader.js?v=19"></script>
+    <script src="js/app.js?v=19"></script>
   </body>
 </html>

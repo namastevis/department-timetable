@@ -1398,3 +1398,36 @@ th {
         overflow-x: auto;
     }
 }
+
+/* ============================================================
+   Jump button: shown only when you have paged away from the current week.
+   On the desktop it keeps its space (visibility) so the week controls stay
+   centred; on a phone it collapses so the week label gets the room.
+   ============================================================ */
+#jumpToTodayBtn.is-hidden {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+@media (max-width: 640px) {
+    #jumpToTodayBtn.is-hidden {
+        display: none;
+    }
+}
+
+/* Notice when the sheet can't be reached (cached copy) or can't be read. */
+.data-notice {
+    margin: 0 0 0.75rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 6px;
+    background: #fffaf0;
+    border: 1px solid #fbd38d;
+    color: #744210;
+    font-size: 0.85rem;
+}
+
+.data-notice.is-error {
+    background: #fff5f5;
+    border-color: #feb2b2;
+    color: #742a2a;
+}

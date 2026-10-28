@@ -60,7 +60,9 @@ function getMondayOf(date) {
     return d;
 }
 
-let currentMonday = getMondayOf(parseLocalDate("2026-08-17")); // Default: Term 1 start date
+// Set in startApp() to the "home" week (see getHomeWeek), once the sheet has
+// been read.
+let currentMonday = null;
 
 // The five columns of the grid, in order. Shared by the header, the phone day
 // tabs and the today-highlight below, so they can never drift apart.
@@ -77,16 +79,73 @@ function todayColumn() {
     return diff >= 0 && diff <= 4 ? DAY_KEYS[diff] : null;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+// Called by loader.js once the Google Sheet has been read.
+function startApp() {
+    buildGridRows();
+    renderSubtitle();
+    buildFilterChoices();
+    currentMonday = getHomeWeek().monday;
+    activeDay = todayColumn() || "Mon";
     initFilters();
     renderGrid();
     setupEventListeners();
-    updateJumpButtonLabel();
     initFilterRail();
     initDetailPanel();
     trackToolbarHeight();
     initDayTabs();
-});
+}
+
+// The grid has one row per slot in the sheet's Slots tab, so a change to
+// FLAME's slot timings needs no change here.
+function buildGridRows() {
+    const body = document.getElementById("gridBody");
+    if (!body) return;
+    body.innerHTML = GRID_SLOTS.map(slot => `
+        <tr data-time="${slot}">
+            <td class="time-label">${SLOT_LABELS[slot]}</td>
+            ${DAY_KEYS.map(d => `<td class="day-cell" data-day="${d}"></td>`).join("")}
+        </tr>`).join("");
+}
+
+// ============================================================
+// Subtitle
+//
+// Written from the data, never by hand: the academic year comes from the
+// first date anything runs (an academic year starts in June or later), and
+// the cohorts from what the sheet actually lists — "Term 2 & Semesters 3, 5,
+// 7". UG/PG is named only when both are present.
+// ============================================================
+
+function listNumbers(nums) {
+    return nums.join(", ");
+}
+
+function cohortSummary(items) {
+    const nums = type => [...new Set(items.filter(d => d.courseType === type).map(d => d.periodNumber))]
+        .sort((a, b) => a - b);
+    const parts = [];
+    const terms = nums("term"), sems = nums("semester");
+    if (terms.length) parts.push(`${terms.length > 1 ? "Terms" : "Term"} ${listNumbers(terms)}`);
+    if (sems.length) parts.push(`${sems.length > 1 ? "Semesters" : "Semester"} ${listNumbers(sems)}`);
+    return parts.join(" & ");
+}
+
+function renderSubtitle() {
+    const el = document.getElementById("pageSubtitle");
+    if (!el) return;
+    let text = "Department Timetable";
+    if (DATA_RANGE) {
+        const start = parseLocalDate(DATA_RANGE.start);
+        const y = start.getMonth() >= 5 ? start.getFullYear() : start.getFullYear() - 1;
+        const levels = [...new Set(RAW_TIMETABLE_DATA.map(d => d.level))].sort().reverse(); // UG before PG
+        const cohorts = levels.length > 1
+            ? levels.map(l => `${l}: ${cohortSummary(RAW_TIMETABLE_DATA.filter(d => d.level === l))}`).join(" · ")
+            : cohortSummary(RAW_TIMETABLE_DATA);
+        text = `Department Timetable, AY ${y}–${String(y + 1).slice(-2)} (${cohorts})`;
+    }
+    el.textContent = text;
+    document.title = `Faculty of Design, Art & Performance | ${text}`;
+}
 
 // The day-header row and the filter rail both pin themselves just below the
 // toolbar, so they need its real height — which changes when the toolbar wraps
@@ -117,7 +176,7 @@ function trackToolbarHeight() {
 const selectedFaculty = new Set();
 
 // The three faculty types, in the order they should appear everywhere.
-// facultyStatus in timetableData.js holds the key; FACULTY_TYPES holds the
+// facultyStatus in the sheet data holds the key; FACULTY_TYPES holds the
 // label, so a rename never means hunting through markup and CSS again.
 const FACULTY_TYPES = [
     { key: "full-time", label: "Full-time" },
@@ -149,6 +208,7 @@ function initFilters() {
 // Reads the current value of every filter control.
 function getCurrentFilterValues() {
     return {
+        level: document.getElementById("levelFilter").value,
         courseType: document.getElementById("courseTypeFilter").value,
         semNumber: document.getElementById("semNumberFilter").value,
         course: document.getElementById("courseFilter").value,
@@ -162,18 +222,12 @@ function getCurrentFilterValues() {
 // filter keys listed in `skip` (used when computing a dropdown's own
 // options — a filter shouldn't narrow itself out).
 //
-// semNumber has one special value, "term1", which doesn't correspond to a
-// real semesterNumber field (Term-type courses don't have one) — it means
-// "any Term-type course" instead, since there's no Term 2 data yet.
+// semNumber holds a period key such as "sem-3" or "term-2", prefixed with the
+// level ("UG|sem-3") so UG Semester 3 and PG Semester 3 stay distinct.
 function itemMatchesFilters(item, filters, skip = []) {
+    if (!skip.includes("level") && filters.level !== "all" && item.level !== filters.level) return false;
     if (!skip.includes("courseType") && filters.courseType !== "all" && item.courseType !== filters.courseType) return false;
-    if (!skip.includes("semNumber") && filters.semNumber !== "all") {
-        if (filters.semNumber === "term1") {
-            if (item.courseType !== "term") return false;
-        } else if (item.semesterNumber !== filters.semNumber) {
-            return false;
-        }
-    }
+    if (!skip.includes("semNumber") && filters.semNumber !== "all" && periodValue(item) !== filters.semNumber) return false;
     if (!skip.includes("course") && filters.course !== "all" && item.code !== filters.course) return false;
     // Faculty is multi-select: no selection means "everyone", otherwise the
     // section matches if ANY selected person teaches it. Co-taught sections
@@ -182,7 +236,10 @@ function itemMatchesFilters(item, filters, skip = []) {
         const names = getFacultyNames(item);
         if (!names.some(n => filters.faculty.includes(n))) return false;
     }
-    if (!skip.includes("facultyStatus") && filters.facultyStatus !== "all" && item.facultyStatus !== filters.facultyStatus) return false;
+    // A co-taught section can have a full-time and a visiting teacher, so it
+    // matches a faculty type if either of them has it.
+    if (!skip.includes("facultyStatus") && filters.facultyStatus !== "all"
+        && !getFacultyNames(item).some(n => personStatus(item, n) === filters.facultyStatus)) return false;
     // A room belongs to a session, not to the course — DESG215 Sec A is in
     // ARB002 on Mon/Wed and ARB104 on Tue. So the section survives this filter
     // if ANY of its sessions is in the chosen room, and the individual
@@ -228,48 +285,64 @@ function populateSelect(selectEl, entries, allLabel, labelFn) {
     selectEl.value = stillValid ? currentValue : "all";
 }
 
-// The Semester/Term dropdown mixes two kinds of values: real semester
-// numbers (3, 5, 7 — only meaningful for Semester-type courses) and the
-// single "term1" value (meaning "any Term-type course"). Its options are
-// cross-linked like Course/Faculty: picking "Semester (Green)" in Course
-// Types leaves only Semester numbers here (Term 1 disappears, since no
-// Term-type item matches), and picking "Term (Blue)" leaves only "Term 1"
-// (the Semester numbers disappear). Left on "Course Types: Semester &
-// Term", both kinds of options are shown together.
+// Period value used by the Semester / Term filter: "UG|sem-3", "UG|term-2".
+function periodValue(item) {
+    return `${item.level}|${item.periodKey}`;
+}
+
+// The faculty type of one named person on a section (co-teachers can differ).
+function personStatus(item, name) {
+    return (item.facultyStatuses && item.facultyStatuses[name]) || item.facultyStatus;
+}
+
+// Semester / Term options are built from what the data holds — Semester 3,
+// 5, 7 and Term 2 today, whatever the sheet says next term — and stay
+// cross-linked to every other filter. Semesters list before terms; UG/PG is
+// named only when the sheet has both.
 function refreshSemNumberOptions() {
     const selectEl = document.getElementById("semNumberFilter");
     const filters = getCurrentFilterValues();
     const items = RAW_TIMETABLE_DATA.filter(d => itemMatchesFilters(d, filters, ["semNumber"]));
+    const multiLevel = new Set(RAW_TIMETABLE_DATA.map(d => d.level)).size > 1;
 
-    const semNumbers = [...new Set(items.filter(d => d.courseType === "semester").map(d => d.semesterNumber))]
-        .filter(Boolean)
-        .sort((a, b) => Number(a) - Number(b));
-    const hasTerm = items.some(d => d.courseType === "term");
+    const periods = new Map();
+    items.forEach(d => periods.set(periodValue(d), d));
+    const entries = [...periods.values()]
+        .sort((a, b) => b.level.localeCompare(a.level)            // UG before PG
+            || (a.courseType === b.courseType ? 0 : a.courseType === "semester" ? -1 : 1)
+            || a.periodNumber - b.periodNumber)
+        .map(d => periodValue(d));
+    const label = v => {
+        const d = periods.get(v);
+        return multiLevel ? `${d.level} ${d.periodLabel}` : d.periodLabel;
+    };
+    populateSelect(selectEl, entries, "All Semesters & Terms", label);
+}
 
-    const currentValue = selectEl.value;
-    selectEl.innerHTML = "";
+// Options for the filters whose choices are fixed lists (level, course type,
+// faculty type) — only the values the sheet actually contains are offered,
+// and a filter with nothing to choose between is left out of the rail.
+function buildFilterChoices() {
+    const has = (fn) => new Set(RAW_TIMETABLE_DATA.flatMap(fn));
+    const levels = [...has(d => [d.level])].sort().reverse();
+    const types = has(d => [d.courseType]);
+    const statuses = has(d => getFacultyNames(d).map(n => personStatus(d, n)));
 
-    const allOpt = document.createElement("option");
-    allOpt.value = "all";
-    allOpt.textContent = "All Semesters & Terms";
-    selectEl.appendChild(allOpt);
+    populateSelect(document.getElementById("levelFilter"), levels, "UG & PG");
+    populateSelect(document.getElementById("courseTypeFilter"),
+        ["semester", "term"].filter(t => types.has(t)), "Semester & Term",
+        t => t === "semester" ? "Semester (Green)" : "Term (Blue)");
+    AVAILABLE_FACULTY_TYPES = FACULTY_TYPES.filter(t => statuses.has(t.key));
+    populateSelect(document.getElementById("facultyStatusFilter"),
+        AVAILABLE_FACULTY_TYPES.map(t => t.key), "All Faculty Types", facultyTypeLabel);
 
-    semNumbers.forEach(num => {
-        const opt = document.createElement("option");
-        opt.value = num;
-        opt.textContent = `Semester ${num}`;
-        selectEl.appendChild(opt);
+    RAIL_CATEGORIES = ALL_RAIL_CATEGORIES.filter(cat => {
+        if (cat.id === "level") return levels.length > 1;
+        if (cat.id === "courseType") return types.size > 1;
+        if (cat.id === "facultyStatus") return AVAILABLE_FACULTY_TYPES.length > 1;
+        return true;
     });
-
-    if (hasTerm) {
-        const opt = document.createElement("option");
-        opt.value = "term1";
-        opt.textContent = "Term 1";
-        selectEl.appendChild(opt);
-    }
-
-    const stillValid = [...selectEl.options].some(o => o.value === currentValue);
-    selectEl.value = stillValid ? currentValue : "all";
+    activeCategory = RAIL_CATEGORIES[0].id;
 }
 
 // Rebuilds the faculty checkbox list, grouped by faculty type. Anyone no
@@ -282,7 +355,7 @@ function refreshFacultyOptions() {
 
     const available = new Map(); // canonical name -> facultyStatus key
     items.forEach(d => getFacultyNames(d).forEach(n => {
-        if (n) available.set(n, d.facultyStatus);
+        if (n) available.set(n, personStatus(d, n));
     }));
 
     [...selectedFaculty].forEach(n => {
@@ -309,7 +382,7 @@ function refreshFacultyOptions() {
         </div>`;
     };
 
-    const html = FACULTY_TYPES.map(group).join("");
+    const html = AVAILABLE_FACULTY_TYPES.map(group).join("");
     container.innerHTML = html || `<p class="multiselect-empty">No faculty match "${query}".</p>`;
     updateFacultyLabel();
 }
@@ -362,7 +435,8 @@ function setFacultySelection(names) {
 // it is multi-select and lives in `selectedFaculty`, not in a <select>.
 // ============================================================
 
-const RAIL_CATEGORIES = [
+const ALL_RAIL_CATEGORIES = [
+    { id: "level", label: "UG / PG", select: "levelFilter" },
     { id: "courseType", label: "Course Type", select: "courseTypeFilter" },
     { id: "semNumber", label: "Semester / Term", select: "semNumberFilter" },
     { id: "course", label: "Course", select: "courseFilter", searchable: true },
@@ -371,6 +445,10 @@ const RAIL_CATEGORIES = [
     { id: "venue", label: "Venue", select: "venueFilter", searchable: true },
 ];
 
+// The categories actually shown — ALL_RAIL_CATEGORIES minus any with nothing
+// to choose between in the current data (see buildFilterChoices).
+let RAIL_CATEGORIES = ALL_RAIL_CATEGORIES;
+let AVAILABLE_FACULTY_TYPES = FACULTY_TYPES;
 let activeCategory = "courseType";
 const categorySearch = {};   // category id -> current search text
 
@@ -421,9 +499,8 @@ function renderRailOptions() {
         wrap.innerHTML = search + `
             <div class="rail-actions">
                 <button type="button" id="selectAllFacultyBtn" class="link-btn">All</button>
-                <button type="button" id="selectFullTimeFacultyBtn" class="link-btn">Full-time</button>
-                <button type="button" id="selectAdjunctFacultyBtn" class="link-btn">Adjunct</button>
-                <button type="button" id="selectVisitingFacultyBtn" class="link-btn">Visiting</button>
+                ${AVAILABLE_FACULTY_TYPES.length > 1 ? AVAILABLE_FACULTY_TYPES.map(t =>
+                    `<button type="button" class="link-btn" data-faculty-type="${t.key}">${t.label}</button>`).join("") : ""}
                 <button type="button" id="clearFacultyBtn" class="link-btn">Clear</button>
             </div>
             <div id="facultyOptions" class="rail-list"></div>`;
@@ -454,8 +531,9 @@ function wireFacultyActions() {
     const allNames = (status) => {
         const names = new Set();
         RAW_TIMETABLE_DATA.forEach(d => {
-            if (status && d.facultyStatus !== status) return;
-            getFacultyNames(d).forEach(n => n && names.add(n));
+            getFacultyNames(d).forEach(n => {
+                if (n && (!status || personStatus(d, n) === status)) names.add(n);
+            });
         });
         return [...names];
     };
@@ -465,10 +543,9 @@ function wireFacultyActions() {
             setFacultySelection(status === "*" ? allNames() : status ? allNames(status) : []));
     };
     bind("selectAllFacultyBtn", "*");
-    bind("selectFullTimeFacultyBtn", "full-time");
-    bind("selectAdjunctFacultyBtn", "adjunct");
-    bind("selectVisitingFacultyBtn", "visiting");
     bind("clearFacultyBtn", null);
+    document.querySelectorAll("[data-faculty-type]").forEach(btn =>
+        btn.addEventListener("click", () => setFacultySelection(allNames(btn.dataset.facultyType))));
 }
 
 function initFilterRail() {
@@ -566,6 +643,16 @@ function refreshVenueOptions() {
     populateSelect(document.getElementById("venueFilter"), venues, "All Venues");
 }
 
+// Faculty Type offers only the types teaching something under the other
+// active filters (e.g. no "Adjunct" when Term 2 has no adjunct faculty).
+function refreshFacultyStatusOptions() {
+    const filters = getCurrentFilterValues();
+    const items = RAW_TIMETABLE_DATA.filter(d => itemMatchesFilters(d, filters, ["facultyStatus"]));
+    const present = new Set(items.flatMap(d => getFacultyNames(d).map(n => personStatus(d, n))));
+    populateSelect(document.getElementById("facultyStatusFilter"),
+        AVAILABLE_FACULTY_TYPES.filter(t => present.has(t.key)).map(t => t.key), "All Faculty Types", facultyTypeLabel);
+}
+
 function refreshCourseOptions() {
     const filters = getCurrentFilterValues();
     const items = RAW_TIMETABLE_DATA.filter(d => itemMatchesFilters(d, filters, ["course"]));
@@ -577,70 +664,66 @@ function refreshCourseOptions() {
     populateSelect(document.getElementById("courseFilter"), courses, "All Courses");
 }
 
-// Decide what the "Jump to..." button should do based on today's real date
-// relative to the term boundaries in TERMS:
-//   - before Term 1 starts        -> "Jump to Term Start" (Term 1)
-//   - inside Term 1 or Term 2     -> "Jump to Current Week" (today)
-//   - in the gap between terms    -> "Jump to Term 2 Start"
-//   - after Term 2 ends           -> "Jump to Term Start" (reset to Term 1)
-function getJumpTarget() {
+// ============================================================
+// Home week and the jump button
+//
+// The page opens on the week in progress. On a Saturday or Sunday that week is
+// over, so it opens on the coming one instead. Before the first class of the
+// period it opens on the first week; after the last, on the last week.
+//
+// The jump button returns to that week, so it only appears once someone has
+// paged away from it.
+// ============================================================
+
+function getHomeWeek() {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const ref = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (ref.getDay() === 6) ref.setDate(ref.getDate() + 2);
+    if (ref.getDay() === 0) ref.setDate(ref.getDate() + 1);
 
-    const terms = (typeof TERMS !== "undefined" ? TERMS : []).map(t => ({
-        name: t.name,
-        start: parseLocalDate(t.startDate),
-        end: parseLocalDate(t.endDate),
-    }));
-
-    if (terms.length === 0) {
-        return { label: "Jump to Term Start", date: parseLocalDate("2026-08-17") };
+    if (DATA_RANGE) {
+        const first = getMondayOf(parseLocalDate(DATA_RANGE.start));
+        const last = getMondayOf(parseLocalDate(DATA_RANGE.end));
+        if (ref < first) return { monday: first, label: "Jump to First Week", short: "First\nweek" };
+        if (getMondayOf(ref) > last) return { monday: last, label: "Jump to Last Week", short: "Last\nweek" };
     }
-
-    const firstTerm = terms[0];
-    const lastTerm = terms[terms.length - 1];
-
-    if (today < firstTerm.start) {
-        return { label: `Jump to ${firstTerm.name} Start`, date: firstTerm.start };
-    }
-
-    for (let i = 0; i < terms.length; i++) {
-        const term = terms[i];
-        if (today >= term.start && today <= term.end) {
-            return { label: "Jump to Current Week", date: today };
-        }
-        const nextTerm = terms[i + 1];
-        if (nextTerm && today > term.end && today < nextTerm.start) {
-            return { label: `Jump to ${nextTerm.name} Start`, date: nextTerm.start };
-        }
-    }
-
-    // After the last term has ended
-    return { label: `Jump to ${firstTerm.name} Start`, date: firstTerm.start };
+    return { monday: getMondayOf(ref), label: "Jump to Current Week", short: "This\nweek" };
 }
 
-function updateJumpButtonLabel() {
+function updateJumpButton() {
     const btn = document.getElementById("jumpToTodayBtn");
-    const label = getJumpTarget().label;
-    btn.textContent = label;
-    btn.title = label;
-    btn.setAttribute("aria-label", label);
-    // Phones show a shortened wording rather than an icon — "↻" gave no clue
-    // what it would do. CSS renders this via ::after at phone widths.
-    // Two lines on a phone so the button stays narrow; the newline is
-    // rendered by white-space: pre-line on the ::after content.
-    btn.dataset.short = label.includes("Current") ? "This\nweek" : "Term\nstart";
+    if (!btn) return;
+    const home = getHomeWeek();
+    const away = currentMonday.getTime() !== home.monday.getTime();
+    btn.textContent = home.label;
+    btn.title = home.label;
+    btn.setAttribute("aria-label", home.label);
+    // Phones show a two-line short wording via CSS ::after (see style.css).
+    btn.dataset.short = home.short;
+    btn.classList.toggle("is-hidden", !away);
+    btn.setAttribute("aria-hidden", String(!away));
+    btn.tabIndex = away ? 0 : -1;
 }
 
 function setupEventListeners() {
     document.getElementById("prevWeekBtn").addEventListener("click", () => changeWeek(-7));
     document.getElementById("nextWeekBtn").addEventListener("click", () => changeWeek(7));
     document.getElementById("jumpToTodayBtn").addEventListener("click", () => {
-        currentMonday = getMondayOf(getJumpTarget().date);
+        currentMonday = getHomeWeek().monday;
+        activeDay = todayColumn() || activeDay;
         renderGrid();
     });
 
     // Filter Change Listeners
+    document.getElementById("levelFilter").addEventListener("change", () => {
+        renderRailCategories();
+
+        refreshVenueOptions();
+        refreshSemNumberOptions();
+        refreshFacultyOptions();
+        refreshCourseOptions();
+        applyFilters();
+    });
     document.getElementById("courseFilter").addEventListener("change", () => {
         renderRailCategories();
 
@@ -690,6 +773,7 @@ function setupEventListeners() {
 
 // Clears every filter back to its default ("all") state and re-renders.
 function resetFilters() {
+    document.getElementById("levelFilter").value = "all";
     document.getElementById("courseTypeFilter").value = "all";
     document.getElementById("semNumberFilter").value = "all";
     document.getElementById("venueFilter").value = "all";
@@ -743,10 +827,9 @@ function weekLabel(monday) {
 
 // Walk week by week in `step` direction looking for one that has matches.
 function scanWeeks(from, step) {
-    const terms = (typeof TERMS !== "undefined" ? TERMS : []);
-    if (!terms.length) return null;
-    const first = getMondayOf(parseLocalDate(terms[0].startDate));
-    const last = getMondayOf(parseLocalDate(terms[terms.length - 1].endDate));
+    if (!DATA_RANGE) return null;
+    const first = getMondayOf(parseLocalDate(DATA_RANGE.start));
+    const last = getMondayOf(parseLocalDate(DATA_RANGE.end));
 
     // Clamp the starting point into the term. Without this, paging past the end
     // of the term and then scanning backwards would start outside the range,
@@ -763,6 +846,7 @@ function scanWeeks(from, step) {
 }
 
 function applyFilters() {
+    refreshFacultyStatusOptions();
     renderGrid();
 }
 
@@ -811,12 +895,8 @@ function renderGrid() {
     updateHeaderDates();
     clearGrid();
 
-    // Get Filter Values
-    const selectedCourse = document.getElementById("courseFilter").value;
-    const selectedVenue = document.getElementById("venueFilter").value;
-    const selectedCourseType = document.getElementById("courseTypeFilter").value;
-    const selectedSemNumber = document.getElementById("semNumberFilter").value;
-    const selectedStatus = document.getElementById("facultyStatusFilter").value;
+    const filters = getCurrentFilterValues();
+    const selectedVenue = filters.venue;
 
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
@@ -844,17 +924,9 @@ function renderGrid() {
     // since a section can meet at different times on different days).
     const visible = [];
     RAW_TIMETABLE_DATA.forEach(item => {
-        // Apply Dropdown Filters (these apply to the whole course-section)
-        if (selectedFaculty.size && !getFacultyNames(item).some(n => selectedFaculty.has(n))) return;
-        if (selectedCourse !== "all" && item.code !== selectedCourse) return;
-        if (selectedVenue !== "all" && !item.sessions.some(s => sessionVenue(item, s) === selectedVenue)) return;
-        if (selectedCourseType !== "all" && item.courseType !== selectedCourseType) return;
-        if (selectedSemNumber === "term1") {
-            if (item.courseType !== "term") return;
-        } else if (selectedSemNumber !== "all" && item.semesterNumber !== selectedSemNumber) {
-            return;
-        }
-        if (selectedStatus !== "all" && item.facultyStatus !== selectedStatus) return;
+        // The same matching the dropdown options use, so what a filter offers
+        // and what it shows can never disagree.
+        if (!itemMatchesFilters(item, filters)) return;
 
         // Date check: Does the current week overlap the course's active date range?
         const itemStart = parseLocalDate(item.startDate);
@@ -924,7 +996,7 @@ function renderGrid() {
 
     // Show a single holiday note at the top of each holiday column (first time row only)
     Object.entries(holidayByDay).forEach(([day, holiday]) => {
-        const firstCell = document.querySelector(`tr[data-time="08:00"] td.day-cell[data-day="${day}"]`);
+        const firstCell = document.querySelector(`tr[data-time="${GRID_SLOTS[0]}"] td.day-cell[data-day="${day}"]`);
         if (firstCell) {
             const note = document.createElement("div");
             note.className = "holiday-note";
@@ -953,7 +1025,7 @@ function renderGrid() {
 // Phones open on today when today is a weekday, otherwise Monday — landing on
 // "Mon" during a Thursday lecture was the most common reason to have to tap
 // before reading anything.
-let activeDay = todayColumn() || "Mon";
+let activeDay = "Mon";   // set to today's column in startApp()
 
 function initDayTabs() {
     const tabs = document.getElementById("dayTabs");
@@ -1042,6 +1114,7 @@ function updateHeaderDates() {
     // whether they have paged away from the present.
     document.querySelector(".week-controls")
         ?.classList.toggle("is-current-week", todayColumn() !== null);
+    updateJumpButton();
 
     const todayKey = todayColumn();
     DAY_KEYS.forEach((day, idx) => {
@@ -1162,14 +1235,17 @@ function openDetail(item, session) {
         <div class="detail-badges">
             <!-- Cohort first: "Sem-7" is what identifies the class. The
                  employment type qualifies who teaches it, so it follows. -->
-            <span class="badge badge-${item.courseType}">${item.semTerm}</span>
-            <span class="badge badge-${item.facultyStatus}">${facultyTypeLabel(item.facultyStatus)}</span>
+            <span class="badge badge-${item.courseType}">${item.level} ${item.periodLabel}</span>
+            ${[...new Set(getFacultyNames(item).map(n => personStatus(item, n)).filter(Boolean))]
+                .map(st => `<span class="badge badge-${st}">${facultyTypeLabel(st)}</span>`).join("")}
         </div>
         ${detailRow("Faculty", displayFaculty(item.faculty))}
         ${detailRow("Runs", `${prettyDate(item.startDate)} &rarr; ${prettyDate(item.endDate)}`)}
         ${detailRow("Sessions", `<ul class="session-list">${sessions}</ul>`)}
-        ${detailRow("Credits", item.credits)}
-        ${detailRow("Cohort", `${item.semTerm} &middot; ${item.sectionId}`)}
+        ${item.credits !== null && item.credits !== "" ? detailRow("Credits", item.credits) : ""}
+        ${detailRow("Cohort", `${item.level} ${item.periodLabel} &middot; ${item.sectionId}`)}
+        ${item.batch ? detailRow("Batch", item.batch) : ""}
+        ${item.strength ? detailRow("Students", item.strength) : ""}
     `;
 
     panel.querySelector(".detail-close").addEventListener("click", closeDetail);
@@ -1228,19 +1304,7 @@ function initDetailPanel() {
 // Shared grid constants
 // ============================================================
 
-const GRID_SLOTS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:15", "15:15", "16:15", "17:15"];
-const SLOT_LABELS = {
-    "08:00": "08:00 - 08:55",
-    "09:00": "09:00 - 09:55",
-    "10:00": "10:00 - 10:55",
-    "11:00": "11:00 - 11:55",
-    "12:00": "12:00 - 12:55",
-    "13:00": "13:00 - 13:55",
-    "14:15": "14:15 - 15:10",
-    "15:15": "15:15 - 16:10",
-    "16:15": "16:15 - 17:10",
-    "17:15": "17:15 - 18:10",
-};
+// GRID_SLOTS and SLOT_LABELS come from the sheet's Slots tab (see loader.js).
 const DAY_LABELS = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday" };
 
 // Most course-sections have a single faculty member. A few (e.g. DANC101,
