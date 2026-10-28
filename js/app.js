@@ -30,6 +30,18 @@ function formatLocalDate(date) {
 // Co-taught sections keep both names: "Rujuta Soman / Vrushali Lele".
 // ============================================================
 
+// Everything shown on the page comes from the Google Sheet, which several
+// people can edit. Any sheet value placed into HTML goes through esc(), so a
+// cell containing markup is shown as text and can never run as script.
+function esc(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 function displayFaculty(name) {
     if (!name) return "";
     return name.split(" / ").map(n => n.replace(/^Prof\.\s*/, "").trim()).join(" / ");
@@ -101,8 +113,8 @@ function buildGridRows() {
     const body = document.getElementById("gridBody");
     if (!body) return;
     body.innerHTML = GRID_SLOTS.map(slot => `
-        <tr data-time="${slot}">
-            <td class="time-label">${SLOT_LABELS[slot]}</td>
+        <tr data-time="${esc(slot)}">
+            <td class="time-label">${esc(SLOT_LABELS[slot])}</td>
             ${DAY_KEYS.map(d => `<td class="day-cell" data-day="${d}"></td>`).join("")}
         </tr>`).join("");
 }
@@ -375,15 +387,15 @@ function refreshFacultyOptions() {
         return `<div class="multiselect-group">
             <div class="multiselect-group-title">${label}</div>
             ${names.map(n => `<label class="multiselect-option">
-                <input type="checkbox" class="faculty-checkbox" value="${n}"
+                <input type="checkbox" class="faculty-checkbox" value="${esc(n)}"
                        data-status="${key}"${selectedFaculty.has(n) ? " checked" : ""} />
-                <span>${displayFaculty(n)}</span>
+                <span>${esc(displayFaculty(n))}</span>
             </label>`).join("")}
         </div>`;
     };
 
     const html = AVAILABLE_FACULTY_TYPES.map(group).join("");
-    container.innerHTML = html || `<p class="multiselect-empty">No faculty match "${query}".</p>`;
+    container.innerHTML = html || `<p class="multiselect-empty">No faculty match "${esc(query)}".</p>`;
     updateFacultyLabel();
 }
 
@@ -478,11 +490,11 @@ function renderSelectOptions(cat) {
     const el = document.getElementById(cat.select);
     const query = (categorySearch[cat.id] || "").toLowerCase();
     const opts = [...el.options].filter(o => !query || o.textContent.toLowerCase().includes(query));
-    if (!opts.length) return `<p class="rail-empty">Nothing matches &ldquo;${categorySearch[cat.id]}&rdquo;.</p>`;
+    if (!opts.length) return `<p class="rail-empty">Nothing matches &ldquo;${esc(categorySearch[cat.id])}&rdquo;.</p>`;
     return `<div class="rail-list">${opts.map(o => `
         <label class="rail-option${o.value === el.value ? " is-checked" : ""}">
-            <input type="radio" name="rail-${cat.id}" value="${o.value}"${o.value === el.value ? " checked" : ""} />
-            <span>${o.textContent}</span>
+            <input type="radio" name="rail-${cat.id}" value="${esc(o.value)}"${o.value === el.value ? " checked" : ""} />
+            <span>${esc(o.textContent)}</span>
         </label>`).join("")}</div>`;
 }
 
@@ -492,7 +504,7 @@ function renderRailOptions() {
     const cat = RAIL_CATEGORIES.find(c => c.id === activeCategory);
     const search = cat.searchable
         ? `<input type="search" class="rail-search" id="railSearch" placeholder="Search ${cat.label.toLowerCase()}"
-                  aria-label="Search ${cat.label}" value="${categorySearch[cat.id] || ""}" />`
+                  aria-label="Search ${cat.label}" value="${esc(categorySearch[cat.id] || "")}" />`
         : "";
 
     if (cat.faculty) {
@@ -959,7 +971,7 @@ function renderGrid() {
                     // 16 courses run more than one section and some share a
                     // teacher, so the section letter rides along on the title.
                     const sectionBadge = item.sectionLabel
-                        ? `<span class="badge badge-section">${item.sectionLabel}</span>`
+                        ? `<span class="badge badge-section">${esc(item.sectionLabel)}</span>`
                         : "";
 
                     // Venue is per-session: a section can meet in different
@@ -985,8 +997,8 @@ function renderGrid() {
                     // section chip didn't fit — reading as a truncated name
                     // when the name was complete.
                     card.innerHTML = `
-                        <div class="title"><span class="course-name">${item.title}</span>${sectionBadge}</div>
-                        <div class="meta">${meta}</div>
+                        <div class="title"><span class="course-name">${esc(item.title)}</span>${sectionBadge}</div>
+                        <div class="meta">${esc(meta)}</div>
                     `;
                     cell.appendChild(card);
                 }
@@ -1065,7 +1077,7 @@ function renderAgenda(visible, holidayByDay) {
     renderDayTabs();
 
     if (holidayByDay[activeDay]) {
-        wrap.innerHTML = `<p class="agenda-empty">Holiday: ${holidayByDay[activeDay].name}</p>`;
+        wrap.innerHTML = `<p class="agenda-empty">Holiday: ${esc(holidayByDay[activeDay].name)}</p>`;
         return;
     }
 
@@ -1081,7 +1093,7 @@ function renderAgenda(visible, holidayByDay) {
 
         const [from, to] = (SLOT_LABELS[slot] || slot).split(" - ");
         return `<div class="agenda-slot">
-            <div class="agenda-time">${from}<em>${to || ""}</em></div>
+            <div class="agenda-time">${esc(from)}<em>${esc(to || "")}</em></div>
             <div class="agenda-body">${here.map(({ item, session, ghost }) => agendaCard(item, session, ghost)).join("")}</div>
         </div>`;
     }).join("");
@@ -1091,12 +1103,12 @@ function renderAgenda(visible, holidayByDay) {
 // panel work here with no extra code.
 function agendaCard(item, session, ghost) {
     const venue = session.venue || item.venue || "";
-    const badge = item.sectionLabel ? `<span class="badge badge-section">${item.sectionLabel}</span>` : "";
+    const badge = item.sectionLabel ? `<span class="badge badge-section">${esc(item.sectionLabel)}</span>` : "";
     const meta = [displayFaculty(item.faculty), shortVenue(venue)].filter(Boolean).join(" · ");
     return `<div class="course-card ${item.courseType}${ghost ? " is-ghost" : ""}" role="button" tabindex="0"
-                 data-code="${item.code}" data-section-id="${item.sectionId}" data-day="${session.day}">
-        <div class="title"><span class="course-name">${item.title}</span>${badge}</div>
-        <div class="meta">${meta}</div>
+                 data-code="${esc(item.code)}" data-section-id="${esc(item.sectionId)}" data-day="${esc(session.day)}">
+        <div class="title"><span class="course-name">${esc(item.title)}</span>${badge}</div>
+        <div class="meta">${esc(meta)}</div>
     </div>`;
 }
 
@@ -1222,30 +1234,30 @@ function openDetail(item, session) {
         .map(s => {
             const room = s.venue || item.venue || "";
             return `<li class="session-item">
-                <span class="session-when">${DAY_LABELS[s.day] || s.day} &middot; ${sessionTimeRange(s)}</span>
-                ${room ? `<span class="session-where">${room}</span>` : ""}
+                <span class="session-when">${esc(DAY_LABELS[s.day] || s.day)} &middot; ${esc(sessionTimeRange(s))}</span>
+                ${room ? `<span class="session-where">${esc(room)}</span>` : ""}
             </li>`;
         })
         .join("");
 
     panel.innerHTML = `
         <button class="detail-close" type="button" aria-label="Close">&times;</button>
-        <div class="detail-code">${item.code}${item.sectionLabel ? ` &middot; Section ${item.sectionLabel}` : ""}</div>
-        <h3 class="detail-title">${item.title}</h3>
+        <div class="detail-code">${esc(item.code)}${item.sectionLabel ? ` &middot; Section ${esc(item.sectionLabel)}` : ""}</div>
+        <h3 class="detail-title">${esc(item.title)}</h3>
         <div class="detail-badges">
             <!-- Cohort first: "Sem-7" is what identifies the class. The
                  employment type qualifies who teaches it, so it follows. -->
-            <span class="badge badge-${item.courseType}">${item.level} ${item.periodLabel}</span>
+            <span class="badge badge-${esc(item.courseType)}">${esc(item.level)} ${esc(item.periodLabel)}</span>
             ${[...new Set(getFacultyNames(item).map(n => personStatus(item, n)).filter(Boolean))]
-                .map(st => `<span class="badge badge-${st}">${facultyTypeLabel(st)}</span>`).join("")}
+                .map(st => `<span class="badge badge-${esc(st)}">${esc(facultyTypeLabel(st))}</span>`).join("")}
         </div>
-        ${detailRow("Faculty", displayFaculty(item.faculty))}
-        ${detailRow("Runs", `${prettyDate(item.startDate)} &rarr; ${prettyDate(item.endDate)}`)}
+        ${detailRow("Faculty", esc(displayFaculty(item.faculty)))}
+        ${detailRow("Runs", `${esc(prettyDate(item.startDate))} &rarr; ${esc(prettyDate(item.endDate))}`)}
         ${detailRow("Sessions", `<ul class="session-list">${sessions}</ul>`)}
-        ${item.credits !== null && item.credits !== "" ? detailRow("Credits", item.credits) : ""}
-        ${detailRow("Cohort", `${item.level} ${item.periodLabel} &middot; ${item.sectionId}`)}
-        ${item.batch ? detailRow("Batch", item.batch) : ""}
-        ${item.strength ? detailRow("Students", item.strength) : ""}
+        ${item.credits !== null && item.credits !== "" ? detailRow("Credits", esc(item.credits)) : ""}
+        ${detailRow("Cohort", `${esc(item.level)} ${esc(item.periodLabel)} &middot; ${esc(item.sectionId)}`)}
+        ${item.batch ? detailRow("Batch", esc(item.batch)) : ""}
+        ${item.strength ? detailRow("Students", esc(item.strength)) : ""}
     `;
 
     panel.querySelector(".detail-close").addEventListener("click", closeDetail);

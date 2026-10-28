@@ -216,7 +216,8 @@ function buildItem(r) {
     if (r.faculty2) facultyStatuses[r.faculty2] = facultyTypeKey(r.faculty2type);
 
     const venues = new Set(sessions.map(s => s.venue));
-    const level = String(r.level || "").toUpperCase() || "UG";
+    // Only the two known levels; anything else in the cell is treated as UG.
+    const level = String(r.level || "").trim().toUpperCase() === "PG" ? "PG" : "UG";
 
     return {
         level,
